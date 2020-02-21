@@ -5,7 +5,7 @@ output: html_notebook
 
 # Variables
 ```{r}
-PATH_HOME = path.expand("~") # user home
+PATH_HOME = path.expand("~") # user home simon
 if ( grepl("simon", PATH_HOME) ) {
   PATH = file.path(PATH_HOME, 'Data/ancova')
 } else {
@@ -117,7 +117,7 @@ for (i in 1:nlevels(data.included$category)){
 data.sample = data.included[c(selection),]
 summary(data.sample$category)
 
-data.sample[,c("Source.title", "category", "Year", "DOI", "Rank.percentile")]
+data.sample[,c("Authors","Source.title", "category", "Year", "DOI", "Rank.percentile")]
 write.xlsx(data.sample, "sample.xlsx")
 ```
 
