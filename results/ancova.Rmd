@@ -26,9 +26,17 @@ FILE_JOURNALS_PSY = 'scimagojr_2018_psychology.csv'
 FILE_JOURNALS_NEURO = 'scimagojr_2018_neuroscience.csv'
 FILE_JOURNALS_MULTI = 'scimagojr_2018_multidis.csv'
 ```
+
 # Libraries
 ```{r}
 library(openxlsx)
+library(pwr)
+```
+
+# Power analysis
+```{r}
+es = 2*asin(sqrt(0.83))-2*asin(sqrt(0.50))
+pwr.2p.test(h=es,power=0.90,sig.level=0.05,alternative="two.sided")
 ```
 
 # Load data
@@ -115,11 +123,37 @@ for (i in 1:nlevels(data.included$category)){
 }
 
 data.sample = data.included[c(selection),]
-summary(data.sample$category)
-
 data.sample = data.sample[,2:ncol(data.sample)]
-data.sample[,c("Authors","Source.title", "category", "Year", "DOI", "Rank.percentile")]
+# write.xlsx(data.sample, "sample.xlsx")
+
+# data.sample$Authors.short = substr(data.sample$Authors, 1, 25)
+# data.sample[1:nrow(data.sample),c("Authors.short","Source.title", "category")]
+```
+
+# resample psychology from 20 to 30 items
+```{r}
+set.seed(1980)
+k=36
+selection = sample(which(data.included$category == "psychology"), k)
+data.sample.psy = data.included[c(selection),]
+data.sample.psy = data.sample.psy[,2:ncol(data.sample.psy)]
+
+# data.sample.psy$Authors.short = substr(data.sample.psy$Authors, 1, 25)
+# data.sample.psy[1:nrow(data.sample.psy),c("Authors.short","Source.title", "category")]
+
+# replace psychology with larger sampling
+tmp = subset(data.sample, subset = category != "psychology")
+data.sample = rbind(tmp, data.sample.psy)
 
 write.xlsx(data.sample, "sample.xlsx")
+
+```
+
+# create table of inclued studies for protocol registration
+```{r}
+tab = read.xlsx(file.path(PATH_RESULTS, "sample_screened.xlsx"))
+tab = subset(tab, subset = Included == "Yes")
+tab = tab[, c("Authors", "ArticleTitle", "Source.title", "Year", "category")]
+write.xlsx(tab, "sample_screend_registr.xlsx")
 ```
 
