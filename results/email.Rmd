@@ -53,6 +53,31 @@ Phone: +41 76 593 1103 | [simon.schwab@uzh.ch](mailto:simon.schwab@uzh.ch)
 [www.crs.uzh.ch](https://www.crs.uzh.ch) | [schw4b.github.io](https://schw4b.github.io)"
 )
 
+body_single <- c("Dear Dr %s\n\n
+
+We'd like to contact you to kindly request data from one of your recent publications.\n\n
+
+We are researchers at the Centre for Reproducible Science (CRS) at University of Zurich, Switzerland. We are interested in re-analyzing studies using Analysis of Covariance (ANCOVA) published in highly ranked journals and in the fields of medicine, multidisciplinary science, neuroscience and psychiatry. We want to explore how many studies share data when requested and if we are able to reanalyze results from ANCOVA. Our study has been registered and the protocol is available here: [https://osf.io/tjngz/](https://osf.io/tjngz/).\n\n
+
+Your study entitled ‘%s’ recently published in ‘%s’ from %d is one such study we had sampled. We would greatly appreciate it if you can share with us a minimal dataset from your study (with explained labels for each variable) and some analysis code that might be relevant. We do not require the full data, only the minimal dataset to reproduce the ANCOVA result. Also, if your paper contains multiple ANCOVAs, we only aim to reproduce the first one reported in the paper. We kindly ask you to specify which are your dependent variables, independent variables and covariates in the excel file that you can find here [https://osf.io/jvkun/](https://osf.io/jvkun/) (press Download on top right). We would highly appreciate it if data can be made available in the next 14 days, if this is possible.\n\n
+
+It is a difficult time but we hope for your support so we can continue our research project. The findings of our study are aimed to improve teaching of best statistical practices and to improve the reproducibility of research findings. We thank you for your assistance in advance. Please reach out to us if you have any questions and we would be happy to elaborate more on the purpose of our study.\n\n
+
+Kind regards,\n\n
+
+Simon Schwab  
+Audrey Yeo\n
+
+--  
+University of Zurich  
+Simon Schwab, PhD  
+Center for Reproducible Science &  
+Epidemiology, Biostatistics and Prevention Institue  
+Hirschengraben 84 | 8001 Zurich | Switzerland  
+Phone: +41 76 593 1103 | [simon.schwab@uzh.ch](mailto:simon.schwab@uzh.ch)  
+[www.crs.uzh.ch](https://www.crs.uzh.ch) | [schw4b.github.io](https://schw4b.github.io)"
+)
+
 
 # Get last name from first and last author
 Author = strsplit(contactlist$Authors, split = ",")
@@ -72,14 +97,22 @@ print(tab)
 
 # creating email bodies
 bodies = character()
-for (i in 1:40) { 
-  bodies[i] = sprintf(body,
-                      contactlist$firstAuthor[i], 
-                      contactlist$lastAuthor[i],
-                      contactlist$ArticleTitle[i],
-                      contactlist$JournalTitle[i],
-                      contactlist$Year[i]
-                      ) 
+for (i in 1:40) {
+  
+  if (i == 13|i == 24) { # for single author papers
+    bodies[i] = sprintf(body_single,
+                        contactlist$firstAuthor[i], 
+                        contactlist$ArticleTitle[i],
+                        contactlist$JournalTitle[i],
+                        contactlist$Year[i]) 
+  } else {
+    bodies[i] = sprintf(body,
+                        contactlist$firstAuthor[i], 
+                        contactlist$lastAuthor[i],
+                        contactlist$ArticleTitle[i],
+                        contactlist$JournalTitle[i],
+                        contactlist$Year[i]) 
+  }
 }
 
 # create emails
@@ -91,17 +124,17 @@ for (i in 1:40) {
 
 # Inspect mail
 ```{r}
-attach_connect_email(email = emails[[10]])
+attach_connect_email(email = emails[[31]])
 ```
 
 
 # Sent out mails
 ```{r, eval=FALSE}
-i=10
+i=40
 
 smtp_send(
   email =  emails[[i]],
-  subject = "Request to share data",
+  subject = paste0("Request to share data (study no. ", i, ")"),
   from = c("Simon Schwab" = "simon.schwab@uzh.ch"),
   to = strsplit(contactlist$Email..first.last.corresponding.[i], split = ";")[[1]],
   cc = c("simon.schwab@uzh.ch","audrey.yeo@uzh.ch"),
