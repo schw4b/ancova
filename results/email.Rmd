@@ -1,80 +1,122 @@
 ---
-title: "Letter to researchers of ANCOVA"
-rmd_output_metadata:
-  rsc_email_subject: Request of your dataset for our ANCOVA meta-analysis
+title: "Email ANCOVA"
+author: "Simon Schwab, Audrey Yeo"
+date: "16 April 2020"
+output: html_notebook
 ---
 
-```{r setup, echo  = FALSE, eval = TRUE}
+```{r}
+# install.packages("rJava")
+# install.packages("mailR")
+
 library(knitr)
 library(rmarkdown)
 library(blastula)
-library(readxl) # hey
+library(readxl)
 library(testit)
 ```
 
-```{r loading file, echo = FALSE, eval = TRUE}
-#temp <- read.csv("sample_screened.xlsx - Sheet 1.csv", header = TRUE)
+# Load data
+```{r}
 temp <- read.csv("sample_screened.csv", header = TRUE, stringsAsFactors = FALSE)
 contactlist <- data.frame(temp)
-contactlist <- contactlist[contactlist$Included == "Yes",] #1
+contactlist <- contactlist[contactlist$Included == "Yes",]
 assert(nrow(contactlist) == 40)
-#title <- "Dr"
-journal <- contactlist[,23]
-name <- contactlist[,1]
-article <- contactlist[,3]
 ```
 
 
-```{r mail_attachment, echo = TRUE, eval = FALSE}
-body <-"Dear Dr %s and colleagues, It is a difficult time but we hope this email finds you well. We are researchers at the Centre for Reproducible Science at University of Zurich, Switzerland. We are interested in re-analyzing studies using Analysis of Covariance (ANCOVA) published in highly ranked journals and in the fields of medicine, multidisciplinary science, neuroscience and psychiatry. We want to explore how many studies share data when requested and if we are able to reanalyze results from ANCOVA. Our study has been registered and the protocol is available here: https://osf.io/4mfdh/. Your study entitled ‘%s’ recently published in ‘%s’ is one such study we had sampled. We would greatly appreciate it if you can share with us a minimal dataset from your study (with explained labels for each variable) and some analysis code that might be relevant. We do not require the full data, only the minimal dataset to reproduce the ANCOVA result. Also, if your paper contains multiple ANCOVAs, we only aim to reproduce the first one reported in the paper. We kindly ask you to specify which are your dependent variables, independent variables and covariates in the excel file attached. We would highly appreciate it if data can be made available in the next 14 days, if possible. It is a difficult time but we hope for your support so we can continue our research project. The findings of our study are aimed to improve teaching of best statistical practices and to improve the reproducibility of research findings. We thank you for your assistance in advance. Please reach out to us if you have any questions and we would be happy to elaborate more on the purpose of our study. Kind regards,Simon Schwab Audrey Yeo \\n -- Simon Schwab, PhD University of Zurich Center for Reproducible Science Hirschengraben 84 | 8001 Zurich | Switzerland | Phone: +41 44 63 44976 | simon.schwab@uzh.ch | www.crs.uzh.ch | https://schw4b.github.io"
+```{r}
+body <- c("Dear Dr %s  
+Dear Dr. %s  
+Dear Co-authors \n\n
+
+We'd like to contact you to kindly request data from one of your recent publications.\n\n
+
+We are researchers at the Centre for Reproducible Science (CRS) at University of Zurich, Switzerland. We are interested in re-analyzing studies using Analysis of Covariance (ANCOVA) published in highly ranked journals and in the fields of medicine, multidisciplinary science, neuroscience and psychiatry. We want to explore how many studies share data when requested and if we are able to reanalyze results from ANCOVA. Our study has been registered and the protocol is available here: [https://osf.io/tjngz/](https://osf.io/tjngz/).\n\n
+
+Your study entitled ‘%s’ recently published in ‘%s’ from %d is one such study we had sampled. We would greatly appreciate it if you can share with us a minimal dataset from your study (with explained labels for each variable) and some analysis code that might be relevant. We do not require the full data, only the minimal dataset to reproduce the ANCOVA result. Also, if your paper contains multiple ANCOVAs, we only aim to reproduce the first one reported in the paper. We kindly ask you to specify which are your dependent variables, independent variables and covariates in the excel file that you can find here [https://osf.io/jvkun/](https://osf.io/jvkun/) (press Download on top right). We would highly appreciate it if data can be made available in the next 14 days, if this is possible.\n\n
+
+It is a difficult time but we hope for your support so we can continue our research project. The findings of our study are aimed to improve teaching of best statistical practices and to improve the reproducibility of research findings. We thank you for your assistance in advance. Please reach out to us if you have any questions and we would be happy to elaborate more on the purpose of our study.\n\n
+
+Kind regards,\n\n
+
+Simon Schwab  
+Audrey Yeo\n
+
+--  
+University of Zurich  
+Simon Schwab, PhD  
+Center for Reproducible Science &  
+Epidemiology, Biostatistics and Prevention Institue  
+Hirschengraben 84 | 8001 Zurich | Switzerland  
+Phone: +41 76 593 1103 | [simon.schwab@uzh.ch](mailto:simon.schwab@uzh.ch)  
+[www.crs.uzh.ch](https://www.crs.uzh.ch) | [schw4b.github.io](https://schw4b.github.io)"
+)
 
 
 # Get last name from first and last author
 Author = strsplit(contactlist$Authors, split = ",")
-firstAuthor = rep(NA, 40)
-lastAuthor = rep(NA, 40)
+contactlist$firstAuthor = NA
+contactlist$lastAuthor = NA
 for (i in 1:40) {
- firstAuthor[i] = Author[[i]][1]
- lastAuthor[i]  = trimws(Author[[i]][length(Author[[i]])-1])
+ contactlist$firstAuthor[i] = Author[[i]][1]
+ contactlist$lastAuthor[i]  = trimws(Author[[i]][length(Author[[i]])-1])
 }
 
-# creating email object
-i=3
-email <- sprintf(body, firstAuthor[i], contactlist$ArticleTitle[i], contactlist$JournalTitle[i]) 
+# Check table
+tab = contactlist[,c("firstAuthor", "lastAuthor", "Email..first.last.corresponding.", "DOI")]
+#tab = contactlist[,c("firstAuthor", "lastAuthor", "ArticleTitle", "Year", "Source.title")]
+#tab$ArticleTitle = substr(tab$ArticleTitle,1,40)
+rownames(tab) = 1:40
+print(tab)
 
-compose <- blastula::compose_email(
-  body = email
+# creating email bodies
+bodies = character()
+for (i in 1:40) { 
+  bodies[i] = sprintf(body,
+                      contactlist$firstAuthor[i], 
+                      contactlist$lastAuthor[i],
+                      contactlist$ArticleTitle[i],
+                      contactlist$JournalTitle[i],
+                      contactlist$Year[i]
+                      ) 
+}
+
+# create emails
+emails = list()
+for (i in 1:40) { 
+  emails[[i]] = compose_email(body = md(bodies[i]))
+}
+```
+
+# Inspect mail
+```{r}
+attach_connect_email(email = emails[[10]])
+```
+
+
+# Sent out mails
+```{r, eval=FALSE}
+i=10
+
+smtp_send(
+  email =  emails[[i]],
+  subject = "Request to share data",
+  from = c("Simon Schwab" = "simon.schwab@uzh.ch"),
+  to = strsplit(contactlist$Email..first.last.corresponding.[i], split = ";")[[1]],
+  cc = c("simon.schwab@uzh.ch","audrey.yeo@uzh.ch"),
+  credentials = creds(
+    host = "smtp.uzh.ch",
+    port = 	587,
+    user = "sischwab",
+    use_ssl = TRUE
+  )
 )
-
-
 ```
 
-
-
-```{r function to send email, echo = FALSE, eval = TRUE}
-for (i in 1:n)
- # "smtp.uzh.ch"
-  # port = 587
-blastula::send.mail(from = "ancovacrs@gmail.com",
-          to = contactlist$Email..first.last.corresponding.,
-          subject = "Request for data for meta-research study",
-          body = email,  #can it be a string or a file
-          smtp = list(host.name = "smtp.gmail.com", port = 465, user.name = "ancovacrs@gmail.com", passwd = "ancova_crs2020", ssl = TRUE),              
-          authenticate = TRUE,
-          send = TRUE)
-
-attachment <- list(read_excel("ANCOVAmetaresearchSchwabandYeo.xlsx") )
-rsc_email_attachments = attachment
-#producing the email outputs
-rmarkdown::output_metadata$set(
-    rsc_email_body_html = email$html_str,
-    rsc_email_attachments = attachment)
-
-```
-
-
-
+# Ressources
 ```{r notes, eval = FALSE, echo = FALSE}
+# https://blog.mailtrap.io/r-send-email/
 #source: https://blog.rstudio.com/2018/07/26/rstudio-connect-1-6-6-custom-emails/
 #https://docs.rstudio.com/connect/1.6.6/user/r-markdown.html#r-markdown-email-body
 #https://github.com/rich-iannone/blastula
