@@ -25,29 +25,10 @@ library(beeswarm)
 
 ```{r setup, echo=FALSE, eval=TRUE, include= FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-
 #  spss_data <- file.choose("07082019 plos one and scientific advances/169.SAV")
 # spss_data <- read.spss(db_169, to.data.frame = TRUE)
 # stat_data <- read.dta13("07082019 plos one and scientific advances/174.dta") }}}
 # data = read_excel("~/Desktop/CRS/Data_forresd/data_12.xls")
-
-if (grepl("SAV", ignore.case = FALSE)) {
-  spss_data <- file.choose("07082019 plos one and scientific advances/169.SAV")
-  spss_data <- read.spss(db_169, to.data.frame = TRUE)
-} else {
-  if (grepl("xls", ignore.case = FALSE) ){
-    excel_data <- read_excel("07082019 plos one and scientific advances/18.xls")
-  }} else {
-  if (grepl("dta", ignore.case = FALSE) )
-stat_data <- read.dta13("07082019 plos one and scientific advances/174.dta") }}}
-data = read_excel("~/Desktop/CRS/Data_forresd/data_12.xls")
-
-```
-
-```{r grep variable names, echo = FALSE, eval = TRUE, inlcude = FALSE}
-IV <- dat$Gender
-DV <- dat2$IQ
-  
 ```
 
 # Running an initial ANCOVA
@@ -66,11 +47,10 @@ DV <- dat2$IQ
 ancovaModel<-aov(DV~ COV + IV, data = data)
 summary.lm(ancovaModel)
 Anova(ancovaModel, type="III")
-#  
 # object<-effect(partnerlibido, viagraModel, se=TRUE)
 # summary(object)
 # object$se
-# 
+
 # adjustedMeans<-effect("dose", viagraModel, se=TRUE)
 # summary(adjustedMeans)
 # adjustedMeans$se
