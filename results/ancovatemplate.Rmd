@@ -28,7 +28,8 @@ knitr::opts_chunk$set(echo = FALSE)
 #  spss_data <- file.choose("07082019 plos one and scientific advances/169.SAV")
 # spss_data <- read.spss(db_169, to.data.frame = TRUE)
 # stat_data <- read.dta13("07082019 plos one and scientific advances/174.dta") }}}
-# data = read_excel("~/Desktop/CRS/Data_forresd/data_12.xls")
+data = read_excel("~/Downloads/")
+names(data)
 ```
 
 # Running an initial ANCOVA
