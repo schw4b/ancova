@@ -49,16 +49,20 @@ colnames(data)[2] <- "Subject"
 EmotionIV <- as.data.frame(c(rep("Neutral", 585), rep("Negative", 585), rep("Positive", 585)))
 colnames(EmotionIV) <- "EmotionIV"
 dim(EmotionIV)
+
 IntensityIV <- as.data.frame(c(rep("One", 351), rep("Two", 351), rep("Three", 351), rep("Four", 351), rep("Five", 351)))
 colnames(IntensityIV) <- "IntensityIV"
 dim(IntensityIV)
+
 ElectrodeIV <- as.data.frame(c(rep("ElectrodeOne", 585), rep("ElectrodeTwo", 585), rep("ElectrodeThree", 585)))
 colnames(ElectrodeIV) <- "ElectrodeIV"
 dim(ElectrodeIV)
+
 COV <- as.data.frame(rep(data$RST_BIS[1:39], 45))
 colnames(COV) <- "COV"
 dim(COV)
 names(data)
+
 # DV <- c(data[1:40,3], data[1:39,4], data[1:39,5], data[1:39,6], data[1:39,7], data[1:39,8], data[1:39,9], data[1:39, 10], data[1:39, 11], data[1:39, 12], data[1:39, 13], data[1:39, 14])
 DV0 <- gather(data, "DVcat", "DV", -Subject, -Oss, -RST_BIS, -`...48`) 
 DV0 <- as.data.frame(DV0[,-c(3,4)]) # we dont need this
@@ -71,13 +75,6 @@ data <- boom
 Running an initial ANCOVA
 
 ## Interpreting the main effects of ANCOVA
-<p align="left">
-- We run the ANCOVA model and compute the variance per dose group
-- The command aov will calculate the ANCOVA, though it is also used with ANOVA
-- The Anova command shows the same output of the summary.lm command. The former specifies the Type III sum of squares used to compute the analyses variances
-- The Anova results of the ancova_mod here show that there is evidence of significant effect of partner libido on libido.
-</p>
-
 ## Main effects of ANCOVA
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
