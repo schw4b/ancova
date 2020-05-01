@@ -99,7 +99,7 @@ print(tab)
 bodies = character()
 for (i in 1:40) {
   
-  if (i == 13|i == 24) { # for single author papers
+  if (i == 13 | i == 24) { # for single author papers
     bodies[i] = sprintf(body_single,
                         contactlist$firstAuthor[i], 
                         contactlist$ArticleTitle[i],
@@ -128,7 +128,7 @@ attach_connect_email(email = emails[[31]])
 ```
 
 
-# Sent out mails
+# Send out mails
 ```{r, eval=FALSE}
 i=40
 
