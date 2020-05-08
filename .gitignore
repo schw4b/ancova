@@ -11,4 +11,4 @@ report/*.swp
 *.do
 *.csv
 *.txt
-data/*
+data
