@@ -13,3 +13,4 @@ report/*.swp
 *.txt
 data
 .Rproj.user
+.Rhistory

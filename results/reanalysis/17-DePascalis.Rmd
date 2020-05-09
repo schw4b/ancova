@@ -1,20 +1,12 @@
 ---
-title: "Untitled"
+title: "17-DePascalis"
 author: "Audrey Yeo Te-ying"
 date: "11/13/2019"
 output: html_document
 ---
-Paper's results section
+The following reanalysis comes from the paper at doi.org : 10.1038/srep41588
 
-```{r, eval=TRUE, echo=FALSE, include = FALSE}
-F = 
-df= 1
-df = 2 
-pvalue =
-```
-
-Loading packages
-
+We first load the appropriate packages
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
 #Setting up libraries
 knitr::opts_chunk$set(echo = TRUE)
@@ -33,13 +25,36 @@ library(ggplot2)
 library(beeswarm)
 library(tidyr)
 ```
+
+Paper's results section
+
+The outcome of interest in the ANCOVA is "N1/P2 complex"
+The independant variables are Emotion (3 levels), Auditory Intensity (five levels), Recording side (three levels) and a Covariate.
+
+```{r, eval=TRUE, echo=FALSE, include = FALSE}
+
+# A similar ANCOVA performed on the N1/P2 slope scores found a highly significant main effect for the BIS, F1,37=13.12, p=0.0009, η2=0.35, indicating lower slopes for high-BIS individuals compared to low-BIS participants (Fig. 2c).
+
+Fvalue =  13.12
+df1 = 1
+df2 = 37
+pvalue = 0.0009
+estimates = as.data.frame(cbind(F, df1, df2, pvalue))
+rownames(estimates) = c("Study")
+estimates
+```
+
+```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+level1 = 3
+level2 = 5
+level3 = 3
+combo <- level1*level2*level3 # possible number of DV based on counts of IV and each of their levels, = 45
+```
+
+
 Loading and Reshaping data
-```{r setup, echo=FALSE, eval=TRUE, include= FALSE}
-knitr::opts_chunk$set(echo = FALSE)
-#  spss_data <- file.choose("07082019 plos one and scientific advances/169.SAV")
-# spss_data <- read.spss(db_169, to.data.frame = TRUE)
-# stat_data <- read.dta13("07082019 plos one and scientific advances/174.dta") }}}
-data = read_excel("~/Downloads/BIS_cov_N1-P2peak_amplitude_r.xlsx", skip = 4)
+```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+data = read_excel("../data/17-DePascalis/BIS_cov_N1-P2peak_amplitude_r.xlsx", skip = 4)
 names(data)
 dim(data)
 # correcting typo
@@ -68,7 +83,7 @@ DV0 <- gather(data, "DVcat", "DV", -Subject, -Oss, -RST_BIS, -`...48`)
 DV0 <- as.data.frame(DV0[,-c(3,4)]) # we dont need this
 names(DV0)
 dim(DV0)
-boom <- cbind(DV0, COV, IntensityIV, EmotionIV, IntensityIV, ElectrodeIV)
+boom <- cbind(DV0, COV, IntensityIV, EmotionIV, ElectrodeIV)
 View(boom)
 data <- boom
 ```
@@ -79,8 +94,18 @@ Running an initial ANCOVA
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
 ancovaModel<-aov(DV ~ COV + EmotionIV + IntensityIV + ElectrodeIV, data = data)
+ancovaModel<-aov(DV ~ COV + EmotionIV, data = data)
+lm_ancova <- lm(DV ~ COV + EmotionIV + IntensityIV + ElectrodeIV, df.residual = 76, data = data)
 summary.lm(ancovaModel)
 Anova(ancovaModel, type="III")
+
+Fvalue =  13.12
+df1 = 1
+df2 = 37
+pvalue = 0.0009
+estimates = as.data.frame(cbind(F, df1, df2, pvalue))
+rownames(estimates) = c("Study")
+estimates
 ```
 <p align="left">
   <b> Definitions </b>
@@ -97,28 +122,33 @@ Checking Assumptions
 
 ## Motivation
 
-<b> Libido Study </b> 
+<b>  </b> 
 <p align="left">
 - Initial one-way ANOVA show that there is no evidence of significant relationship between dose and libido, motivates to evaluate its underlying covariances to answer :
 - What is the variance explained by three doses of Viagra on Libido?
 - And what is the variance explained by Partner Libido on Libido. 
 </p>
 ```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-first_mod <- aov(DV ~ IV, data = data)
-summary(first_mod)
+mod1 <- aov(DV ~ EmotionIV, data = data)
+mod2 <- aov(DV ~ IntensityIV, data = data)
+mod3 <- aov(DV ~ ElectrodeIV, data = data)
+c(summary(mod1$fitted.values,summary(mod2$coefficients),summary(mod3$coefficients))
+
+mod1$coefficients
+
 ```
 ## Explore Data
 <p align="left">
 - Boxplot shows: Does different doses produce different outcomes
 </p>
-```{r, echo= FALSE, include = TRUE, eval = TRUE, tidy = TRUE}
+```{r, echo= TRUE, include = TRUE, eval = TRUE, tidy = TRUE}
 #IV : Emotion
 par(mfrow=c(1,2))
 beeswarm(DV~EmotionIV, data= data, main = "Emotion vs Outcome", pch = 16, col = rainbow(8))
 boxplot(DV~EmotionIV, data= data, outline = FALSE, main = " ", add= TRUE) 
 par(mfrow=c(1,2))
 beeswarm(COV~EmotionIV, data= data, pch = 16, col = rainbow(8), main = "Emotion vs Covariate")
-boxplot(COV ~ EmotionIV, data = data, outline = FALSE, main = " ", add = TRUE) # add = TRUE sometimes work to superimpose both plots
+boxplot(COV ~ EmotionIV, data = data, outline = FALSE, main = " ", add = TRUE) 
 
 #IV : Intensity
 par(mfrow=c(1,2))
@@ -155,47 +185,41 @@ by(data$DV, data$EmotionIV, stat.desc)
 ## Graphical Anaylsis for homogeneity of regression slopes
 
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
- head(data)
 
-ggplot(data) +
+data %>% ggplot() +
 +   geom_jitter(aes(COV, DV, colour = factor(EmotionIV))) +
 +   geom_smooth(method = lm)
-ggplot(data) +
-ggplot(df, aes(y = DV, x = EmotionIV, group = Area, colour = Area)) +
-  geom_jitter(aes(colour = factor(Area)))
-  geom_smooth(method = lm)
+
+ggplot(data, aes(y = DV, x = EmotionIV, group = factor(EmotionIV), colour = factor(EmotionIV))) +  geom_jitter(aes(colour = factor(EmotionIV))) + geom_smooth(method = lm)
 ```
 
 ## Assumption 1 : Homogeneity of variance
 <p align="left">
-- Levene's Test: Are the variances between doses on libido very similar ?
-- A good double-check of Levene’s test is to look at the highest and lowest variances. For our three groups we have standard deviations of 1.79 (placebo), 1.46 (low dose) and 2.12 (high dose)
+- Levene's Test: Are the variances between levels on outcome very similar ?
+- A good double-check of Levene’s test is to look at the highest and lowest variances. For our levels we have standard deviations of .
 </p>
 ```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-leveneTest(data$DV, data$IV, center = median)
+leveneTest(data$DV, data$EmotionIV, center = median)
+leveneTest(data$DV, data$IntensityIV, center = median)
+leveneTest(data$DV, data$ElectrodeIV, center = median)
 ```
 ## Assumption 2 : Check that the covariate and any independent variables are independent
 
 <p align="left">
-- We run an ANOVA to find out if the covariance independant to each of the three doses? 
-- The summary results show that on low and high doses, there is no evidence of significant association of these doses to partner libido.
+- We run an ANOVA to find out if the covariance independant to each of the IV levels? 
+- The summary results show that on different levels for each IV, there is no evidence of significant association to N1/P2 complex.
 </p>
 ```{r, eval = TRUE, echo = TRUE}
-checkIndependenceModel<-aov(COV ~ IV, data = data)
-summary(checkIndependenceModel)
-summary.lm(checkIndependenceModel)
+checkIndependenceModel1<-aov(COV ~ EmotionIV, data = data) 
+checkIndependenceModel2<-aov(COV ~ IntensityIV, data = data)
+checkIndependenceModel3<-aov(COV ~ ElectrodeIV, data = data)
+summary(checkIndependenceModel1)
+summary(checkIndependenceModel2)
+summary(checkIndependenceModel3)
 ```
-## Running the ANCOVA
-<p align="left">
-</p>
-```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-ancova_mod <- aov(DV ~ IV + COV, data= data)
-summary(ancova_mod)
-```
-
 ## Residuals vs Fitted : Testing for Homogeneity of Variance
 <p align="left">
-- The residuals for fitted value are similar to zero
+- The residuals for fitted value are similar to zero, assumption for homogeneity of variance held.
 </p>
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy= TRUE, fig.width = 6, fig.height = 5}
 plot(ancovaModel, which = 1)
@@ -203,7 +227,6 @@ plot(ancovaModel, which = 1)
 ## QQ plots
 <p align="left">
 - Residuals are normally distributed
-- estimate in each case is the difference between the adjusted group means
 </p>
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy =TRUE, fig.width = 4, fig.height = 5}
 plot(ancovaModel, which = 2)
@@ -213,39 +236,49 @@ plot(ancovaModel, which = 2)
 - A Tukey-Ascombe test is performed via a general linear hypotheses function from library(multcomp).
 - It is used for a pairwise comparison t test between doses for between groups differences
 - In other words: we want to test differences between the adjusted means.
-- In this case, the differences between Higher dose and Placebo can be compared with evidence of significance.
+- In this case, the differences between IV levels can be compared with evidence of significance.
 - In this method, we are restricted to the Tukey and the Dunnett method.
 </p>
 ```{r, include = TRUE, echo = TRUE, eval = TRUE}
-postHocs<-glht(ancovaModel, linfct = mcp(dose = "Tukey"))
+postHocs<-glht(ancovaModel, linfct = mcp(ElectrodeIV = "Tukey"))
 summary(postHocs)
 confint(postHocs)
 ```
 ## Going back to Basic Assumptions : Homogeneity of Regression Slopes
 <p align="left">
-- "The significant between interaction effect and dose show that the assumption is not tenable..
-- "Although this finding is not surprising given the pattern of relationships, it does raise concern about the main analysis. This example illustrates why it is important to test assumptions and not to just blindly accept the results of an analysis"
+There is a positive relationship between all IV and Covariate.
 </p>
 ```{r, include = TRUE, echo = TRUE, eval = TRUE}
-hoRS<-aov(DV ~ COV*IV, data = viagraData)
-hoRS<-update(ancovaModel, .~. + COV:IV)
-df0 <- Anova(hoRS, type="III")
-df <- df[3, 3:4]
-```
+#IVA <- c(EmotionIV, IntensityIV, ElectrodeIV)
+# IVA[1]
+# for (i in 1:3){assign(paste0("hoRs",i, aov(DV ~ COV*IV[i], data = data)))} 
 
-## Summary and Conclusion
-<p align="left">
-- ANOVA is not ANCOVA because the latter accounts for analysis of variance of the covariate or covariates
-- Interpretation of ANCOVA depends on the order in the aov(...) function
-- Basic Assumptions are important because for example the overall conclusion of the relationship between Viagra and Libido must be based on an independance assumption between covariates and dose of Viagra
-- Thus the conclusion that Partner libido has a significant influence on Libido under three condition of Viagra dose, is inaccurate.
-</p>
+hoRS1<-aov(DV ~ COV*EmotionIV, data = data)
+hoRS2<-aov(DV ~ COV*IntensityIV, data = data)
+hoRS2<-aov(DV ~ COV*ElectrodeIV, data = data)
+
+hoRS1<-update(ancovaModel, .~. + COV:EmotionIV)
+hoRS2<-update(ancovaModel, .~. + COV:IntensityIV)
+hoR3S<-update(ancovaModel, .~. + COV:ElectrodeIV)
+
+summary(hoRS1) 
+summary(hoRS2)
+summary(hoR3S)
+
+df01 <- Anova(hoRS1, type="III")
+df02 <- Anova(hoRS1, type="III")
+df03 <- Anova(hoRS1, type="III")
+
+df <- as.data.frame(c(df01[3, 3:4],df02[3, 3:4],df03[3, 3:4]))
+```
 
 ## Creating a data frame 
 <p align="left">
 - 
 </p>
 ```{r}
-
+reanalysis = cbind(FvalueR, df1R, df2R, pvalueR)
+rownames(reanalysis) = c("Reanalysis")
+estimates = rbind(estimates, reanalysis)
 ```
 
