@@ -11,6 +11,7 @@ report/*.swp
 *.do
 *.csv
 *.txt
+*.Rproj
 data
-.Rproj.user
+results/reanalysis/reanalysis.Rproj
 .Rhistory
