@@ -1,6 +1,6 @@
 ---
 title: "17-DePascalis"
-author: "Audrey Yeo Te-ying"
+author: "Simon Schwab, Audrey Yeo"
 date: "11/13/2019"
 output: html_document
 ---
