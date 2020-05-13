@@ -11,5 +11,6 @@ report/*.swp
 *.do
 *.csv
 *.txt
-data
+dataPrimaryStudies
+dataPrimaryStudies*.zip
 .Rproj.user

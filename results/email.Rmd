@@ -20,8 +20,8 @@ library(testit)
 ```{r}
 temp <- read.csv("sample_screened.csv", header = TRUE, stringsAsFactors = FALSE)
 contactlist <- data.frame(temp)
-contactlist <- contactlist[contactlist$Included == "Yes",]
-assert(nrow(contactlist) == 40)
+contactlist <- contactlist[contactlist$Included == "Yes" & 
+                             contactlist$Data.sharing.3w..no..yes. == "no",]
 ```
 
 
@@ -30,7 +30,7 @@ body <- c("Dear Dr %s
 Dear Dr. %s  
 Dear Co-authors \n\n
 
-We'd like to contact you to kindly request data from one of your recent publications.\n\n
+We'd like to get back to you to kindly request data from one of your recent publications.\n\n
 
 We are researchers at the Centre for Reproducible Science (CRS) at University of Zurich, Switzerland. We are interested in re-analyzing studies using Analysis of Covariance (ANCOVA) published in highly ranked journals and in the fields of medicine, multidisciplinary science, neuroscience and psychiatry. We want to explore how many studies share data when requested and if we are able to reanalyze results from ANCOVA. Our study has been registered and the protocol is available here: [https://osf.io/tjngz/](https://osf.io/tjngz/).\n\n
 
@@ -55,7 +55,7 @@ Phone: +41 76 593 1103 | [simon.schwab@uzh.ch](mailto:simon.schwab@uzh.ch)
 
 body_single <- c("Dear Dr %s\n\n
 
-We'd like to contact you to kindly request data from one of your recent publications.\n\n
+We'd like to get back to you to kindly request data from one of your recent publications.\n\n
 
 We are researchers at the Centre for Reproducible Science (CRS) at University of Zurich, Switzerland. We are interested in re-analyzing studies using Analysis of Covariance (ANCOVA) published in highly ranked journals and in the fields of medicine, multidisciplinary science, neuroscience and psychiatry. We want to explore how many studies share data when requested and if we are able to reanalyze results from ANCOVA. Our study has been registered and the protocol is available here: [https://osf.io/tjngz/](https://osf.io/tjngz/).\n\n
 
@@ -83,7 +83,7 @@ Phone: +41 76 593 1103 | [simon.schwab@uzh.ch](mailto:simon.schwab@uzh.ch)
 Author = strsplit(contactlist$Authors, split = ",")
 contactlist$firstAuthor = NA
 contactlist$lastAuthor = NA
-for (i in 1:40) {
+for (i in 1:nrow(contactlist)) {
  contactlist$firstAuthor[i] = Author[[i]][1]
  contactlist$lastAuthor[i]  = trimws(Author[[i]][length(Author[[i]])-1])
 }
@@ -92,12 +92,12 @@ for (i in 1:40) {
 tab = contactlist[,c("firstAuthor", "lastAuthor", "Email..first.last.corresponding.", "DOI")]
 #tab = contactlist[,c("firstAuthor", "lastAuthor", "ArticleTitle", "Year", "Source.title")]
 #tab$ArticleTitle = substr(tab$ArticleTitle,1,40)
-rownames(tab) = 1:40
+rownames(tab) = 1:nrow(contactlist)
 print(tab)
 
 # creating email bodies
 bodies = character()
-for (i in 1:40) {
+for (i in 1:nrow(contactlist)) {
   
   if (i == 13 | i == 24) { # for single author papers
     bodies[i] = sprintf(body_single,
@@ -117,24 +117,24 @@ for (i in 1:40) {
 
 # create emails
 emails = list()
-for (i in 1:40) { 
+for (i in 1:nrow(contactlist)) { 
   emails[[i]] = compose_email(body = md(bodies[i]))
 }
 ```
 
 # Inspect mail
 ```{r}
-attach_connect_email(email = emails[[31]])
+attach_connect_email(email = emails[[6]])
 ```
 
 
 # Send out mails
 ```{r, eval=FALSE}
-i=40
+i=28
 
 smtp_send(
   email =  emails[[i]],
-  subject = paste0("Request to share data (study no. ", i, ")"),
+  subject = paste0("Follow-up request to share data (study no. ", contactlist$No[i], ")"),
   from = c("Simon Schwab" = "simon.schwab@uzh.ch"),
   to = strsplit(contactlist$Email..first.last.corresponding.[i], split = ";")[[1]],
   cc = c("simon.schwab@uzh.ch","audrey.yeo@uzh.ch"),
