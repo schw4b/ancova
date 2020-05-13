@@ -1,0 +1,131 @@
+---
+title: "Reanalysis of 06-Wile"
+author: "Simon Schwab"
+date: "13/05/2020"
+output: pdf_document
+---
+
+# Reference
+Wile et al. (2017). Serotonin and dopamine transporter PET changes in the premotor phase of LRRK2 parkinsonism: cross-sectional studies. *Lancet Neurology*, 16(5), 351–359. https://doi.org/10.1016/S1474-4422(17)30056-X
+
+```{r, include=FALSE}
+# install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
+library(biostatUZH)
+library(car)
+library(readxl)
+library(foreign)
+library(readxl)
+library(ggplot2)
+```
+
+# Notes from reading methods section
+* Dependant variable: 11C-DASB in cortex (first of many ANCOVAs reported)
+* Independant variable: Group
+  * Healty controls (n=9)
+  * LRRK2 w/o PD    (n=9)
+  * LRRK2 w PD      (n=7)
+  * sporadic PD     (n=13)
+* Covariate: age
+* age was not estimable for LRRK2 without manifest Parkinson's disease
+* Design: 4-way ANCOVA with group as IV and age as covariate
+
+# Loading data
+Data is loaded, reshaped if necessary, and factors are specified.
+```{r}
+PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
+data = read_excel(file.path(PATH, "dataPrimaryStudies", "06-Wile", "06-Wile.xlsx"))
+
+# group variable is dummy coded, key for AncovaVariable file
+# 0 = healthy control, 1 = LRRK2 premanifest, 2 = LRRK2 affected, 3 = sporadic PD
+data$Group.factor = NA
+data$Group.factor[data$Group == 0] = "healthy control"
+data$Group.factor[data$Group == 1] = "LRRK2 premanifest"
+data$Group.factor[data$Group == 2] = "LRRK2 affected"
+data$Group.factor[data$Group == 3] = "sporadic PD"
+data$Group.factor = factor(data$Group.factor,
+                           levels = c("healthy control", "LRRK2 premanifest",
+                                      "LRRK2 affected", "sporadic PD"))
+```
+
+# Descriptives
+Number of samples and mean (SD) in levels of the independant variables. See Table 3 in publication.
+```{r}
+idx = c(1, 3, 2, 4) # sorting as in publication
+tab1 = array(NA, dim=c(4,3))
+tab1[,1] = levels(data$Group.factor)
+tab1[,2] = summary(data$Group.factor)
+tab1[,3] = tapply(data$Cortex, data$Group.factor, 
+                  function (x) sprintf("%0.2f (%0.2f)", mean(x), sd(x)))
+colnames(tab1) = c("group", "n", "mean (SD)")
+print(tab1)
+```
+Figure 2 in Publication
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=Cortex, x=Group.factor, color=Group.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("¹¹C-DASB in cortex")
+```
+
+```{r, include=FALSE}
+stats.orig.IV = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = 0.026)
+
+stats.orig.CV = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = NA)
+```
+
+# ANCOVA
+```{r}
+fit = aov(Cortex ~ Group.factor + `Age at PET`, data = data)
+
+# Type I SS are appropriate for balanced (oqual n per group)
+# Type II SS are used by SAS and SPSS and appropriate for unbalanced designs
+# result = summary(fit) # Type I
+result = Anova(fit, type=3) # Type III
+print(result)
+```
+
+```{r}
+# For Type I SS
+# stats.reanalysis = data.frame(Fvalue = sprintf("%.2f",result[[1]]$`F value`[1]),
+#                               df1 = result[[1]]$Df[1],
+#                               df2 = result[[1]]$Df[2],
+#                               pvalue = formatPval(result[[1]]$`Pr(>F)`[1]))
+
+# For Type III SS
+stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+                              df1 = result$Df[2],
+                              df2 = result$Df[4],
+                              pvalue = formatPval(result$`Pr(>F)`[2]))
+
+stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
+                              df1 = result$Df[3],
+                              df2 = result$Df[4],
+                              pvalue = formatPval(result$`Pr(>F)`[3]))
+```
+
+# Comparing ANCOVA in original study with reanalysis
+## Independant variable
+```{r}
+tab.IV = rbind(stats.orig.IV, stats.rep.IV)
+rownames(tab.IV) = c("original Study", "reanalysis")
+print(t(tab.IV))
+```
+
+## Covariate
+```{r}
+tab.CV = rbind(stats.orig.CV, stats.rep.CV)
+rownames(tab.CV) = c("original Study", "reanalysis")
+print(t(tab.CV))
+```
+
+
