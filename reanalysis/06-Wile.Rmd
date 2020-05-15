@@ -19,7 +19,7 @@ library(ggplot2)
 ```
 
 # Notes from reading methods section
-* Dependant variable: 11C-DASB in cortex (first of many ANCOVAs reported)
+* Dependant variable: PET radiotracer called 11C-DASB in cortex (first of many ANCOVAs reported)
 * Independant variable: Group
   * Healty controls (n=9)
   * LRRK2 w/o PD    (n=9)
@@ -48,7 +48,7 @@ data$Group.factor = factor(data$Group.factor,
 ```
 
 # Descriptives
-Number of samples and mean (SD) in levels of the independant variables. See Table 3 in publication.
+Number of samples and mean (SD) in levels of the independant variables. We reproduce Table 3 and Figure 2A of the study.
 ```{r}
 idx = c(1, 3, 2, 4) # sorting as in publication
 tab1 = array(NA, dim=c(4,3))
@@ -59,7 +59,7 @@ tab1[,3] = tapply(data$Cortex, data$Group.factor,
 colnames(tab1) = c("group", "n", "mean (SD)")
 print(tab1)
 ```
-Figure 2 in Publication
+
 ```{r fig.height=2, fig.width=3.5}
 ggplot(data, aes(y=Cortex, x=Group.factor, color=Group.factor)) +
   geom_boxplot() +
@@ -84,12 +84,10 @@ stats.orig.CV = data.frame(
 ```
 
 # ANCOVA
+We will use Type I sum of squares for balanced designs (equal *n* per group), and Type III for unbalanced designs and used in SAS and SPSS.
 ```{r}
 fit = aov(Cortex ~ Group.factor + `Age at PET`, data = data)
-
-# Type I SS are appropriate for balanced (oqual n per group)
-# Type II SS are used by SAS and SPSS and appropriate for unbalanced designs
-# result = summary(fit) # Type I
+#result = summary(fit) # Type I
 result = Anova(fit, type=3) # Type III
 print(result)
 ```
@@ -127,5 +125,43 @@ tab.CV = rbind(stats.orig.CV, stats.rep.CV)
 rownames(tab.CV) = c("original Study", "reanalysis")
 print(t(tab.CV))
 ```
+# Additional analyses: MANCOVA
+The paper performed four ANCOVAs for cortex, striatum, brainstem, and hypothalamus but did not correct for multiple testing. Therefore, we also perform a MANCOVA.
+```{r}
+fit = manova(cbind(Cortex, Striatum, Brainstem, Hypothalamus) ~ Group.factor + `Age at PET`, data=data)
+summary(fit)
+```
+
+# Assumptions
+## 1.  Homogeneity of variance
+* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
+* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
+* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
+```{r}
+tapply(data$Cortex, data$Group.factor, sd)
+leveneTest(Cortex ~ Group.factor, data = data)
+```
 
 
+## 2.  Independence between covariate and IV
+When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
+
+We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
+```{r}
+fit.cv = aov(`Age at PET` ~ Group.factor, data = data) 
+summary(fit.cv)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=`Age at PET`, x=Group.factor, color=Group.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("Age at PET")
+```
+
+
+## 3. Homogeneity of regression slopes
+
+Data was analyzed according to recommendations by Field, Miles, & Field (2012).
