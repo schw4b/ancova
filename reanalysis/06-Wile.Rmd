@@ -91,6 +91,9 @@ ggplot(data, aes(y=`Age at PET`, x=Group.factor, color=Group.factor)) +
   xlab("group") + ylab("Age at PET") + ggtitle("Covarate")
 ```
 
+# ANCOVA
+We will use Type I sum of squares for balanced designs (equal *n* per group), and Type III for unbalanced designs and used in SAS and SPSS.
+
 ```{r, include=FALSE}
 stats.orig.IV = data.frame(
   Fvalue =  NA,
@@ -105,10 +108,10 @@ stats.orig.CV = data.frame(
   pvalue = NA)
 ```
 
-# ANCOVA
-We will use Type I sum of squares for balanced designs (equal *n* per group), and Type III for unbalanced designs and used in SAS and SPSS.
+
 ```{r}
-contrasts(data$Group.factor) = contr.helmert(4) # when is this necessary?
+# Orthogonal contrasts
+contrasts(data$Group.factor) = contr.helmert(4) # check whether we get same results by commenting this line
 
 fit = aov(Cortex ~ `Age at PET` + Group.factor, data = data)
 # result = summary(fit) # Type I
