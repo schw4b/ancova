@@ -4,7 +4,9 @@ author: "Simon Schwab, Audrey Yeo"
 date: "11/13/2019"
 output: html_document
 ---
-The following reanalysis comes from the paper at doi.org : 10.1161/STROKEAHA.117.019810
+
+# Reference
+Van Leijsen et al. (2017). Plasma Aβ (Amyloid-β) Levels and Severity and Progression of Small Vessel Disease. *Stroke*, 16(5), 351–359. https://doi.org/10.1161/STROKEAHA.117.019810
 
 We first load the appropriate packages
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
@@ -26,20 +28,21 @@ library(beeswarm)
 library(tidyr)
 ```
 
-Paper's results section
+# Notes from reading methods section
 
-The outcome of interest in the ANCOVA is "SVD"
-The independant variables are plasma Aβ (two levels : Aβ38 and Aβ40)
+* Dependant variable: "SVD" with number of events in each of three SVD markers
+* The independant variables are plasma Aβ (three levels : Aβ38, Aβ40, Aβ42)
+* Covariate: age
 
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
 
 # We analyzed associations between plasma Aβ and SVD markers by ANCOVA adjusted for age, sex, and hypertension.
 
 #We used 4 models to investigate the associations between plasma Aβ levels and SVD markers: model 1, unadjusted; model 2, adjusted for age and sex.
-Fvalue =  
-df1 = 
-df2 = 
-pvalue = 
+Fvalue =  NA
+df1 = NA
+df2 = NA
+pvalue = NA
 estimates = as.data.frame(cbind(F, df1, df2, pvalue))
 rownames(estimates) = c("Study")
 estimates
