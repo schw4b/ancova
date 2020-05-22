@@ -4,7 +4,10 @@ author: "Simon Schwab, Audrey Yeo"
 date: "11/13/2019"
 output: html_document
 ---
-The following reanalysis comes from the paper at doi.org : 10.1038/srep41588
+
+# Reference
+DePascalis. (2017). Serotonin and dopamine transporter PET changes in the premotor phase of LRRK2 parkinsonism: cross-sectional studies. *Lancet Neurology*, 16(5), 351–359. https://doi.org/10.1038/srep41588
+
 
 We first load the appropriate packages
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
