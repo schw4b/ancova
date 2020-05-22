@@ -29,7 +29,7 @@ library(ggplot2)
 * age was not estimable for LRRK2 without manifest Parkinson's disease
 * Design: 4-way ANCOVA with group as IV and age as covariate
 
-# Loading data
+# Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r}
 PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
@@ -48,16 +48,17 @@ data$Group.factor = factor(data$Group.factor,
 ```
 
 # Descriptives
+## Dependant variable
 Number of samples and mean (SD) in levels of the independant variables. We reproduce Table 3 and Figure 2A of the study.
 ```{r}
 idx = c(1, 3, 2, 4) # sorting as in publication
-tab1 = array(NA, dim=c(4,3))
-tab1[,1] = levels(data$Group.factor)
-tab1[,2] = summary(data$Group.factor)
-tab1[,3] = tapply(data$Cortex, data$Group.factor, 
+tab.dv = array(NA, dim=c(4,3))
+tab.dv[,1] = levels(data$Group.factor)
+tab.dv[,2] = summary(data$Group.factor)
+tab.dv[,3] = tapply(data$Cortex, data$Group.factor, 
                   function (x) sprintf("%0.2f (%0.2f)", mean(x), sd(x)))
-colnames(tab1) = c("group", "n", "mean (SD)")
-print(tab1)
+colnames(tab.dv) = c("group", "n", "mean (SD)")
+print(tab.dv)
 ```
 
 ```{r fig.height=2, fig.width=3.5}
@@ -65,8 +66,29 @@ ggplot(data, aes(y=Cortex, x=Group.factor, color=Group.factor)) +
   geom_boxplot() +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
   theme_minimal() +
-  theme(axis.text = element_blank(), legend.title = element_blank()) +
-  xlab("group") + ylab("¹¹C-DASB in cortex")
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("¹¹C-DASB in cortex") + ggtitle("Dependant variable")
+```
+
+## Covariate
+```{r}
+idx = c(1, 3, 2, 4) # sorting as in publication
+tab.cv = array(NA, dim=c(4,3))
+tab.cv[,1] = levels(data$Group.factor)
+tab.cv[,2] = summary(data$Group.factor)
+tab.cv[,3] = tapply(data$`Age at PET`, data$Group.factor, 
+                  function (x) sprintf("%0.1f (%0.1f)", mean(x), sd(x)))
+colnames(tab.cv) = c("group", "n", "mean (SD)")
+print(tab.cv)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=`Age at PET`, x=Group.factor, color=Group.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("Age at PET") + ggtitle("Covarate")
 ```
 
 ```{r, include=FALSE}
@@ -86,8 +108,10 @@ stats.orig.CV = data.frame(
 # ANCOVA
 We will use Type I sum of squares for balanced designs (equal *n* per group), and Type III for unbalanced designs and used in SAS and SPSS.
 ```{r}
-fit = aov(Cortex ~ Group.factor + `Age at PET`, data = data)
-#result = summary(fit) # Type I
+contrasts(data$Group.factor) = contr.helmert(4) # when is this necessary?
+
+fit = aov(Cortex ~ `Age at PET` + Group.factor, data = data)
+# result = summary(fit) # Type I
 result = Anova(fit, type=3) # Type III
 print(result)
 ```
@@ -100,15 +124,15 @@ print(result)
 #                               pvalue = formatPval(result[[1]]$`Pr(>F)`[1]))
 
 # For Type III SS
-stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
-                              df1 = result$Df[2],
-                              df2 = result$Df[4],
-                              pvalue = formatPval(result$`Pr(>F)`[2]))
-
-stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
+stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
                               df1 = result$Df[3],
                               df2 = result$Df[4],
                               pvalue = formatPval(result$`Pr(>F)`[3]))
+
+stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+                              df1 = result$Df[2],
+                              df2 = result$Df[4],
+                              pvalue = formatPval(result$`Pr(>F)`[2]))
 ```
 
 # Comparing ANCOVA in original study with reanalysis
@@ -124,12 +148,6 @@ print(t(tab.IV))
 tab.CV = rbind(stats.orig.CV, stats.rep.CV)
 rownames(tab.CV) = c("original Study", "reanalysis")
 print(t(tab.CV))
-```
-# Additional analyses: MANCOVA
-The paper performed four ANCOVAs for cortex, striatum, brainstem, and hypothalamus but did not correct for multiple testing. Therefore, we also perform a MANCOVA.
-```{r}
-fit = manova(cbind(Cortex, Striatum, Brainstem, Hypothalamus) ~ Group.factor + `Age at PET`, data=data)
-summary(fit)
 ```
 
 # Assumptions
@@ -152,16 +170,28 @@ fit.cv = aov(`Age at PET` ~ Group.factor, data = data)
 summary(fit.cv)
 ```
 
+
+## 3. Homogeneity of regression slopes
+```{r}
+fit.hrs = aov(Cortex ~ `Age at PET`*Group.factor, data = data)
+Anova(fit.hrs, type=3)
+```
+
 ```{r fig.height=2, fig.width=3.5}
-ggplot(data, aes(y=`Age at PET`, x=Group.factor, color=Group.factor)) +
-  geom_boxplot() +
-  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+ggplot(data, aes(y=Cortex, x=`Age at PET`, color=Group.factor, shape=Group.factor)) +
+  geom_point() +
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
   theme_minimal() +
-  theme(axis.text = element_blank(), legend.title = element_blank()) +
-  xlab("group") + ylab("Age at PET")
+  theme(legend.title = element_blank()) +
+  xlab("Age at PET") + ylab("¹¹C-DASB in cortex")
 ```
 
 
-## 3. Homogeneity of regression slopes
+# Additional analyses: MANCOVA
+The paper performed four ANCOVAs for cortex, striatum, brainstem, and hypothalamus but did not correct for multiple testing. Therefore, we also perform a MANCOVA.
+```{r}
+fit = manova(cbind(Cortex, Striatum, Brainstem, Hypothalamus) ~ Group.factor + `Age at PET`, data=data)
+summary(fit)
+```
 
 Data was analyzed according to recommendations by Field, Miles, & Field (2012).
