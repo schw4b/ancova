@@ -57,16 +57,22 @@ combo <- level1*level2*level3 # possible number of DV based on counts of IV and 
 
 Loading and Reshaping data if appropriate
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
-data = read_excel("../data/25-VanLeijsen/VanLeijstudyNo25DATA.xlsx")
+data = read_excel("../results/data/25-VanLeijsen/VanLeijstudyNo25DATA.xlsx")
 names(data)
-DV = mb_presence_b #lac_presence_b is also an SVD marker which is a DV
+DV = data$mb_presence_b #this is microbleed. lac_presence_b is also an SVD marker which is a DV
 # there are two covariates analysed in this study
 ageCOV = data$age
-sexCOV = data$sex
+#sexCOV = data$sex
 # IV is plasma AB which has three levels
 ab38IV = data$AB38
 ab40IV = data$AB40
 ab42IV = data$AB42
+data = gather(data, key = "IVlevel", "IVvalue", AB38, AB40, AB42) 
+data = gather(data, key = "SVDmarker", "rate", mb_presence_b, lac_presence_b)
+data
+
+
+
 ```
 Running an initial ANCOVA
 
@@ -74,10 +80,10 @@ Running an initial ANCOVA
 ## Main effects of ANCOVA
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
-ancovaModel<-aov(DV ~ ageCOV + ab38IV + ab10IV + ab42IV, data = data)
-lm_ancova <- lm(DV ~ COV + ageCOV + ab38IV + ab10IV + ab42IV, data = data)
+ancovaModel<-aov(DV ~ IVlevel + ageCOV, data = data)
+lm_ancova <- lm(DV ~ IVlevel + ageCOV, data = data)
 summary.lm(ancovaModel)
-Anova(ancovaModel, type="I") # this is not a balanced study
+Anova(ancovaModel) # this is not a balanced study
 
 ```
 <p align="left">
@@ -102,13 +108,9 @@ Checking Assumptions
 - And what is the variance explained by Covariate on SVD marker. 
 </p>
 ```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-mod1 <- aov(DV ~ ab38IV, data = data)
-mod2 <- aov(DV ~ ab40IV, data = data)
-mod3 <- aov(DV ~ ab42IV, data = data)
-c(summary(mod1$fitted.values,summary(mod2$coefficients),summary(mod3$coefficients))
-
+mod1 <- aov(DV ~ IVlevel, data = data)
 mod1$coefficients
-
+summary(mod1)
 ```
 ## Explore Data
 <p align="left">
@@ -117,34 +119,15 @@ mod1$coefficients
 ```{r, echo= TRUE, include = TRUE, eval = TRUE, tidy = TRUE}
 #IV : Emotion
 par(mfrow=c(1,2))
-beeswarm(DV~EmotionIV, data= data, main = "Emotion vs Outcome", pch = 16, col = rainbow(8))
-boxplot(DV~EmotionIV, data= data, outline = FALSE, main = " ", add= TRUE) 
-par(mfrow=c(1,2))
-beeswarm(COV~EmotionIV, data= data, pch = 16, col = rainbow(8), main = "Emotion vs Covariate")
-boxplot(COV ~ EmotionIV, data = data, outline = FALSE, main = " ", add = TRUE) 
-
-#IV : Intensity
-par(mfrow=c(1,2))
-beeswarm(DV~IntensityIV, data= data, main = "Emotion vs Outcome", pch = 16, col = rainbow(8))
-boxplot(DV~IntensityIV, data= data, outline = FALSE, main = " ", add= TRUE) 
-par(mfrow=c(1,2))
-beeswarm(COV~IntensityIV, data= data, pch = 16, col = rainbow(8), main = "Emotion vs Covariate")
-boxplot(COV ~ IntensityIV, data = data, outline = FALSE, main = " ", add = TRUE) 
-#IV : Electrode
-par(mfrow=c(1,2))
-beeswarm(DV~ElectrodeIV, data= data, main = "Emotion vs Outcome", pch = 16, col = rainbow(8))
-boxplot(DV~ElectrodeIV, data= data, outline = FALSE, main = " ", add= TRUE) 
-par(mfrow=c(1,2))
-beeswarm(COV~ElectrodeIV, data= data, pch = 16, col = rainbow(8), main = "Emotion vs Covariate")
-boxplot(COV ~ ElectrodeIV, data = data, outline = FALSE, main = " ", add = TRUE) 
+beeswarm(DV~IVlevel, data= data, main = "", pch = 16, col = rainbow(8))
+boxplot(DV~IVvalue, data= data, outline = FALSE, main = " ", add= TRUE) 
 ```
 ## Explore Data : Descriptives
 <p align="left">
 - Descriptive Statistics
 </p>
 ```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-by(data$DV, data$EmotionIV, stat.desc)
-by(data$DV, data$EmotionIV, stat.desc)
+by(data$DV, data$IVlevel, stat.desc)
 ```
 
 ## Explore Data : Graphical analysis for homogeneity of regression slopes
