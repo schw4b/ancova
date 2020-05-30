@@ -111,7 +111,9 @@ stats.orig.CV = data.frame(
 
 ```{r}
 # Orthogonal contrasts
-contrasts(data$Group.factor) = contr.helmert(4) # check whether we get same results by commenting this line
+
+# check whether we get same results by commenting this line
+contrasts(data$Group.factor) = contr.helmert(4) 
 
 fit = aov(Cortex ~ `Age at PET` + Group.factor, data = data)
 # result = summary(fit) # Type I
@@ -183,7 +185,7 @@ Anova(fit.hrs, type=3)
 ```{r fig.height=2, fig.width=3.5}
 ggplot(data, aes(y=Cortex, x=`Age at PET`, color=Group.factor, shape=Group.factor)) +
   geom_point() +
-  geom_smooth(method=lm, se=FALSE, fullrange=TRUE) +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
   theme_minimal() +
   theme(legend.title = element_blank()) +
   xlab("Age at PET") + ylab("¹¹C-DASB in cortex")
@@ -193,7 +195,8 @@ ggplot(data, aes(y=Cortex, x=`Age at PET`, color=Group.factor, shape=Group.facto
 # Additional analyses: MANCOVA
 The paper performed four ANCOVAs for cortex, striatum, brainstem, and hypothalamus but did not correct for multiple testing. Therefore, we also perform a MANCOVA.
 ```{r}
-fit = manova(cbind(Cortex, Striatum, Brainstem, Hypothalamus) ~ Group.factor + `Age at PET`, data=data)
+fit = manova(cbind(Cortex, Striatum, Brainstem, Hypothalamus) ~ Group.factor + `Age at PET`,
+             data=data)
 summary(fit)
 ```
 
