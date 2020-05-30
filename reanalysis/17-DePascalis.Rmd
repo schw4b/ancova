@@ -8,7 +8,6 @@ output: html_document
 # Reference
 DePascalis. (2017). Serotonin and dopamine transporter PET changes in the premotor phase of LRRK2 parkinsonism: cross-sectional studies. *Lancet Neurology*, 16(5), 351–359. https://doi.org/10.1038/srep41588
 
-
 We first load the appropriate packages
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
 #Setting up libraries
@@ -29,7 +28,7 @@ library(beeswarm)
 library(tidyr)
 ```
 
-Paper's results section
+#Paper's results section
 
 The outcome of interest in the ANCOVA is "N1/P2 complex"
 The independant variables are Emotion (3 levels), Auditory Intensity (five levels), Recording side (three levels) and a Covariate.
@@ -53,20 +52,21 @@ level2 = 5
 level3 = 3
 combo <- level1*level2*level3 # possible number of DV based on counts of IV and each of their levels, = 45
 ```
-
-
-Loading and Reshaping data
+# Reading data
+Data is loaded, reshaped if necessary, and factors are specified.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
-data = read_excel("../data/17-DePascalis/BIS_cov_N1-P2peak_amplitude_r.xlsx", skip = 4)
+data = read_excel("../results/data/17-DePascalis/BIS_cov_N1-P2peak_amplitude_r.xlsx", skip = 4)
 names(data)
 dim(data)
 # correcting typo
 colnames(data)[2] <- "Subject"
 
-#creating a long form data set, first pull columns and set as class data.frame, then name columns
+
+#creating a long form data set, first pull columns and set as class data.frame, then name columns #39 * 15 different levels is 353
 EmotionIV <- as.data.frame(c(rep("Neutral", 585), rep("Negative", 585), rep("Positive", 585)))
 colnames(EmotionIV) <- "EmotionIV"
 dim(EmotionIV)
+head(EmotionIV)
 
 IntensityIV <- as.data.frame(c(rep("One", 351), rep("Two", 351), rep("Three", 351), rep("Four", 351), rep("Five", 351)))
 colnames(IntensityIV) <- "IntensityIV"
@@ -76,31 +76,40 @@ ElectrodeIV <- as.data.frame(c(rep("ElectrodeOne", 585), rep("ElectrodeTwo", 585
 colnames(ElectrodeIV) <- "ElectrodeIV"
 dim(ElectrodeIV)
 
+
 COV <- as.data.frame(rep(data$RST_BIS[1:39], 45))
 colnames(COV) <- "COV"
 dim(COV)
 names(data)
 
 # DV <- c(data[1:40,3], data[1:39,4], data[1:39,5], data[1:39,6], data[1:39,7], data[1:39,8], data[1:39,9], data[1:39, 10], data[1:39, 11], data[1:39, 12], data[1:39, 13], data[1:39, 14])
-DV0 <- gather(data, "DVcat", "DV", -Subject, -Oss, -RST_BIS, -`...48`) 
-DV0 <- as.data.frame(DV0[,-c(3,4)]) # we dont need this
+DV00 <- gather(data, "DVcat", "DV", -Subject, -Oss, -RST_BIS, -`...48`) 
+DV0 <- as.data.frame(DV00[,-c(3:5)]) # we dont need this
+names(data)
+names(DV00)
 names(DV0)
-dim(DV0)
 boom <- cbind(DV0, COV, IntensityIV, EmotionIV, ElectrodeIV)
 View(boom)
 data <- boom
+names(data)
+View(data)
+head()
 ```
 Running an initial ANCOVA
 
-## Interpreting the main effects of ANCOVA
-## Main effects of ANCOVA
+# Interpreting the main effects of ANCOVA
+Main effects of ANCOVA
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
-ancovaModel<-aov(DV ~ COV + EmotionIV + IntensityIV + ElectrodeIV, data = data)
-ancovaModel<-aov(DV ~ COV + EmotionIV, data = data)
-lm_ancova <- lm(DV ~ COV + EmotionIV + IntensityIV + ElectrodeIV, df.residual = 76, data = data)
-summary.lm(ancovaModel)
-Anova(ancovaModel, type="III")
+ancovaModel<-aov(DV ~ COV + EmotionIV*IntensityIV*ElectrodeIV,  data = data) # there is evidence of significance that COV impacts on DV, residuals is less than the belowmodel
+summary(ancovaModel)
+Anova(ancovaModel, type = "3")
+Error(Subject/(EmotionIV*IntensityIV*ElectrodeIV))
+ancovaModel<-aov(DV ~ COV + EmotionIV, data = data) # there is evidence of significance that COV impacts on DV, larger residuals than above model
+
+lm_ancova <- lm(DV ~ COV + EmotionIV + IntensityIV + ElectrodeIV + (1|data$Oss), data = data)
+summary(lm_ancova)
+Anova(lm_ancova, type="III")
 
 Fvalue =  13.12
 df1 = 1
