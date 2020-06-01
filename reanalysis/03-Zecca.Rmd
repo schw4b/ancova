@@ -1,0 +1,192 @@
+---
+title: "Reanalysis of 03-Zecca"
+author: "Simon Schwab"
+date: "01/06/2020"
+output: pdf_document
+---
+
+# Reference
+Zecca, E., Brunelli, C., Centurioni, F., Manzoni, A., Pigni, A., & Caraceni, A. (2017). Fentanyl Sublingual Tablets Versus Subcutaneous Morphine for the Management of Severe Cancer Pain Episodes in Patients Receiving Opioid Treatment: A Double-Blind, Randomized, Noninferiority Trial. *Journal of Clinical Oncology*, 35(7), 759–765. https://doi.org/10.1200/JCO.2016.69.9504
+
+```{r, include=FALSE}
+# install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
+library(biostatUZH)
+library(car)
+library(readxl)
+library(foreign)
+library(readxl)
+library(openxlsx)
+library(ggplot2)
+library(effects)
+```
+
+# Notes from reading methods section
+* Dependant variable: Pain intensity (PI) (average across follow-ups, AVP_30)
+* Independant variable: treatment group
+  * Fentanyl sublingual tablets FST (n=57, 1 from 58 was excluded)
+  * Subcutaneous morphine SCM (n=56)
+* Covariate: basline PI
+* Design: 1-way ANCOVA with group as IV and baselie PI as covariate
+
+# Reading data
+Data is loaded, reshaped if necessary, and factors are specified.
+```{r}
+PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
+data = read_excel(file.path(PATH, "dataPrimaryStudies", "03-Zecca", "03-Zecca.xls"))
+data = as.data.frame(data)
+data$tratt = as.factor(data$tratt)
+```
+
+# Descriptives
+## Dependant variable
+Number of samples and mean (SD) in levels of the independant variables.
+```{r}
+tab.dv = array(NA, dim=c(2,3))
+tab.dv[,1] = levels(data$tratt)
+tab.dv[,2] = summary(data$tratt)
+tab.dv[,3] = tapply(data$pain_mea_30, data$tratt, 
+                  function (x) sprintf("%0.2f (%0.2f)", mean(x), sd(x)))
+colnames(tab.dv) = c("group", "n", "mean (SD)")
+print(tab.dv)
+```
+
+```{r, fig.height=2, fig.width=3.3}
+ggplot(data, aes(y=pain_mea_30, x=tratt, color=tratt)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("mean PI across follow-ups ") + ggtitle("Dependant variable")
+```
+
+## Covariate(s)
+```{r}
+tab.cv = array(NA, dim=c(2,3))
+tab.cv[,1] = levels(data$tratt)
+tab.cv[,2] = summary(data$tratt)
+tab.cv[,3] = tapply(data$pain_mea_bas, data$tratt, 
+                  function (x) sprintf("%0.2f (%0.2f)", mean(x), sd(x)))
+colnames(tab.cv) = c("group", "n", "mean (SD)")
+print(tab.cv)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=pain_mea_bas, x=tratt, color=tratt)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("PI at baseline") + ggtitle("Covarate")
+```
+
+# Main analysis ANCOVA
+```{r, include=FALSE}
+stats.orig.IV = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = NA,
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
+
+stats.orig.CV = stats.orig.IV
+
+# enter all results from primary study here
+stats.orig.IV$MD = -0.49
+stats.orig.IV$lowerCI = -1.10
+stats.orig.IV$upperCI = 0.09
+```
+
+```{r}
+# Orthogonal contrasts
+contrasts(data$tratt) = contr.helmert(2) 
+
+fit.ancova = aov(pain_mea_30 ~ pain_mea_bas + tratt, data = data)
+result = Anova(fit.ancova, type=3) # Type III
+print(result)
+```
+
+The paper used ANCOVA to to a non-inferiority analysis. We calculate ANCOVA adjusted means and 95%-CI.
+```{r}
+means.adj = effect("tratt", fit.ancova, se=TRUE)
+MD = means.adj$fit[1] - means.adj$fit[2] 
+# SE is smaller as covarate reduced noise
+SE = sqrt(means.adj$se[1]^2 + means.adj$se[2]^2)
+ci95 = c(MD - 1.96*SE, MD + 1.96*SE)
+sprintf("%.2f (%.2f, %.2f)", MD, ci95[1], ci95[2])
+```
+
+```{r, include=FALSE}
+stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
+                          df1 = result$Df[3],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[3]),
+                          MD = sprintf("%.2f", MD),
+                          lowerCI = sprintf("%.2f", ci95[1]),
+                          upperCI = sprintf("%.2f", ci95[2])
+)
+
+stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+                          df1 = result$Df[2],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[2]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+```
+
+# Comparing ANCOVA in original study with reanalysis
+## Independant variable
+```{r}
+tab.IV = rbind(stats.orig.IV, stats.rep.IV)
+rownames(tab.IV) = c("original Study", "reanalysis")
+print(t(tab.IV))
+```
+
+## Covariate
+```{r}
+tab.CV = rbind(stats.orig.CV, stats.rep.CV)
+rownames(tab.CV) = c("original Study", "reanalysis")
+print(t(tab.CV))
+```
+
+# Assumptions
+## 1.  Homogeneity of variance
+* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
+* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
+* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
+```{r}
+tapply(data$pain_mea_30, data$tratt, sd)
+leveneTest(pain_mea_30 ~ tratt, data = data)
+```
+
+
+## 2.  Independence between covariate and IV
+When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
+
+We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
+```{r}
+fit.cv = aov(pain_mea_bas ~ tratt, data = data) 
+Anova(fit.cv, type=3)
+```
+
+
+## 3. Homogeneity of regression slopes
+```{r}
+fit.hrs = aov(pain_mea_30 ~ pain_mea_bas*tratt, data = data)
+Anova(fit.hrs, type=3)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=pain_mea_30, x=pain_mea_bas, color=tratt, shape=tratt)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  xlab("Age at PET") + ylab("¹¹C-DASB in cortex")
+```
+
+
+Data was analyzed according to recommendations by Field, Miles, & Field (2012).
