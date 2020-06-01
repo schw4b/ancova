@@ -109,11 +109,16 @@ print(result)
 
 The paper used ANCOVA to to a non-inferiority analysis. We calculate ANCOVA adjusted means and 95%-CI.
 ```{r}
-means.adj = effect("tratt", fit.ancova, se=TRUE)
+n = summary(data$tratt)
+means.adj = effect("tratt", fit.ancova, se=T)
 MD = means.adj$fit[1] - means.adj$fit[2] 
-# SE is smaller as covarate reduced noise
+# variance assumed unequal
 SE = sqrt(means.adj$se[1]^2 + means.adj$se[2]^2)
-ci95 = c(MD - 1.96*SE, MD + 1.96*SE)
+#ci95 = c(MD - 1.96*SE, MD + 1.96*SE)
+# SE based on t-distribution because n1 and n2 < 60
+myt = qt(.975, df= n[1] + n[2] - 2)
+ci95 = c(MD - myt*SE, MD + myt*SE)
+
 sprintf("%.2f (%.2f, %.2f)", MD, ci95[1], ci95[2])
 ```
 
