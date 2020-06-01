@@ -1,7 +1,7 @@
 ---
 title: "Reanalysis of 06-Wile"
 author: "Simon Schwab"
-date: "13/05/2020"
+date: "01/06/2020"
 output: pdf_document
 ---
 
@@ -27,7 +27,7 @@ library(ggplot2)
   * sporadic PD     (n=13)
 * Covariate: age
 * age was not estimable for LRRK2 without manifest Parkinson's disease
-* Design: 4-way ANCOVA with group as IV and age as covariate
+* Design: 1-way ANCOVA with group (4 leves) as IV and age as covariate
 
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
@@ -70,7 +70,7 @@ ggplot(data, aes(y=Cortex, x=Group.factor, color=Group.factor)) +
   xlab("group") + ylab("¹¹C-DASB in cortex") + ggtitle("Dependant variable")
 ```
 
-## Covariate
+## Covariate(s)
 ```{r}
 idx = c(1, 3, 2, 4) # sorting as in publication
 tab.cv = array(NA, dim=c(4,3))
@@ -91,53 +91,52 @@ ggplot(data, aes(y=`Age at PET`, x=Group.factor, color=Group.factor)) +
   xlab("group") + ylab("Age at PET") + ggtitle("Covarate")
 ```
 
-# ANCOVA
-We will use Type I sum of squares for balanced designs (equal *n* per group), and Type III for unbalanced designs and used in SAS and SPSS.
-
+# Main analysis ANCOVA
 ```{r, include=FALSE}
 stats.orig.IV = data.frame(
   Fvalue =  NA,
   df1 = NA,
   df2 = NA,
-  pvalue = 0.026)
+  pvalue = NA,
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
 
-stats.orig.CV = data.frame(
-  Fvalue =  NA,
-  df1 = NA,
-  df2 = NA,
-  pvalue = NA)
+stats.orig.CV = stats.orig.IV
+
+# enter all results from primary study here
+stats.orig.IV$pvalue = 0.026 
 ```
 
 
 ```{r}
 # Orthogonal contrasts
-
-# check whether we get same results by commenting this line
 contrasts(data$Group.factor) = contr.helmert(4) 
 
-fit = aov(Cortex ~ `Age at PET` + Group.factor, data = data)
+fit.ancova = aov(Cortex ~ `Age at PET` + Group.factor, data = data)
 # result = summary(fit) # Type I
-result = Anova(fit, type=3) # Type III
+result = Anova(fit.ancova, type=3) # Type III
 print(result)
 ```
 
-```{r}
-# For Type I SS
-# stats.reanalysis = data.frame(Fvalue = sprintf("%.2f",result[[1]]$`F value`[1]),
-#                               df1 = result[[1]]$Df[1],
-#                               df2 = result[[1]]$Df[2],
-#                               pvalue = formatPval(result[[1]]$`Pr(>F)`[1]))
-
-# For Type III SS
+```{r, include=FALSE}
 stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
-                              df1 = result$Df[3],
-                              df2 = result$Df[4],
-                              pvalue = formatPval(result$`Pr(>F)`[3]))
+                          df1 = result$Df[3],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[3]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
 
 stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
-                              df1 = result$Df[2],
-                              df2 = result$Df[4],
-                              pvalue = formatPval(result$`Pr(>F)`[2]))
+                          df1 = result$Df[2],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[2]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
 ```
 
 # Comparing ANCOVA in original study with reanalysis
