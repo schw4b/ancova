@@ -40,9 +40,12 @@ estimates
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 data = read_excel("../results/data/25-VanLeijsen/VanLeijstudyNo25DATA.xlsx")
-data = gather(data, key = "IVlevel", "IVvalue", mb_presence_b, lac_presence_b) 
+#data = gather(data, key = "IVlevel", "IVvalue", mb_presence_b, -lac_presence_b) 
 
-data = data[data$IVvalue == "1",] # we chose mb_presence_b = 1
+data = data[data$IVvalue == "0",] # we chose mb_presence_b = 1
+
+cor(data$mb_presence_b, data$lac_presence_b, method = "spearman")
+
 
 # datanolac = data[data$mb_presence_b == "0"]
 # datamic = data[data$mb_presence_b == "1"]
@@ -73,10 +76,13 @@ Number of samples and mean (SD) in levels of the independant variables. We repro
 # Main analysis ANCOVA
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
-ancovaModel <-aov(AB38 ~ age, 
+ancovaModel <-aov(AB38 ~ + age + sex, 
                   data = data)
-lm_ancova <- lm(tbv_b ~ IVlevel + age, 
-                data = data)
+ancova <- aov(AB38 ~ mb_presence_b, data = data)
+ancova
+summary(ancova)
+
+lm_ancova
 summary.lm(ancovaModel)
 
 # Orthogonal contrasts
