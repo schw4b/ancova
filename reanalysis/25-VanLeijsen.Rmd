@@ -12,33 +12,21 @@ We first load the appropriate packages
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
 #Setting up libraries
 knitr::opts_chunk$set(echo = TRUE)
+library(biostatUZH)
+library(car)
 library(readxl)
 library(foreign)
 library(readxl)
-library(readstata13)
-library(car) # for levene's test
-library(effects)# for adjusted means
-library(ggplot2) # for graphs
-library(multcomp) #for post hoc test
-library(pastecs)# for descriptive statistics
-library(reshape)
-library(effects)# for effect command
 library(ggplot2)
-library(beeswarm)
-library(tidyr)
 ```
 
 # Notes from reading methods section
 
-* Dependant variable: "SVD" with number of events in each of three SVD markers
-* The independant variables are plasma Aβ (three levels : Aβ38, Aβ40, Aβ42)
+* Dependant variable: "SVD", a continuous variable measured by SPM12 sytem
+* The independant variables are (categorically) plasma Aβ (three levels : Aβ38, Aβ40, Aβ42)
 * Covariate: age
 
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
-
-# We analyzed associations between plasma Aβ and SVD markers by ANCOVA adjusted for age, sex, and hypertension.
-
-#We used 4 models to investigate the associations between plasma Aβ levels and SVD markers: model 1, unadjusted; model 2, adjusted for age and sex.
 Fvalue =  NA
 df1 = NA
 df2 = NA
@@ -48,86 +36,162 @@ rownames(estimates) = c("Study")
 estimates
 ```
 
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
-level1 = 3
-level2 = 5
-level3 = 3
-combo <- level1*level2*level3 # possible number of DV based on counts of IV and each of their levels, = 45
-```
-
-Loading and Reshaping data if appropriate
+# Reading data
+Data is loaded, reshaped if necessary, and factors are specified.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 data = read_excel("../results/data/25-VanLeijsen/VanLeijstudyNo25DATA.xlsx")
-names(data)
-DV = data$mb_presence_b #this is microbleed. lac_presence_b is also an SVD marker which is a DV
+data = gather(data, key = "IVlevel", "IVvalue", mb_presence_b, lac_presence_b) 
+
+data = data[data$IVvalue == "1",] # we chose mb_presence_b = 1
+
+# datanolac = data[data$mb_presence_b == "0"]
+# datamic = data[data$mb_presence_b == "1"]
+# datanomic = data[data$mb_presence_b == "0"]
+
+#DV = data$tbv_b
 # there are two covariates analysed in this study
-ageCOV = data$age
+#ageCOV = data$age
 #sexCOV = data$sex
 # IV is plasma AB which has three levels
-ab38IV = data$AB38
-ab40IV = data$AB40
-ab42IV = data$AB42
-data = gather(data, key = "IVlevel", "IVvalue", AB38, AB40, AB42) 
-data = gather(data, key = "SVDmarker", "rate", mb_presence_b, lac_presence_b)
-data
+# ab38IV = data$AB38
+# ab40IV = data$AB40
+# ab42IV = data$AB42
 
-
-
+# subset this data 
+# datalac = data[data$mb_presence_b == "1"]
+# datanolac = data[data$mb_presence_b == "0"]
+# datamic = data[data$mb_presence_b == "1"]
+# datanomic = data[data$mb_presence_b == "0"]
+#data = gather(data, key = "SVDmarker", "rate", mb_presence_b, lac_presence_b)
+#data
 ```
-Running an initial ANCOVA
 
-## Interpreting the main effects of ANCOVA
-## Main effects of ANCOVA
+# Descriptives
+## Dependant variable
+Number of samples and mean (SD) in levels of the independant variables. We reproduce Table 3 and Figure 2A of the study.
+
+# Main analysis ANCOVA
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
-ancovaModel<-aov(DV ~ IVlevel + ageCOV, data = data)
-lm_ancova <- lm(DV ~ IVlevel + ageCOV, data = data)
+ancovaModel <-aov(AB38 ~ age, 
+                  data = data)
+lm_ancova <- lm(tbv_b ~ IVlevel + age, 
+                data = data)
 summary.lm(ancovaModel)
-Anova(ancovaModel) # this is not a balanced study
+
+# Orthogonal contrasts
+contrasts(data$IVvalue) = contr.helmert(3) #doesnt work
+result = Anova(ancovaModel, type = 3) # this is not a balanced study
+print(result)
+```
+
+```{r, include=FALSE}
+stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
+                          df1 = result$Df[3],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[3]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+
+stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+                          df1 = result$Df[2],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[2]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+```
+
+
+# Comparing ANCOVA in original study with reanalysis
+## Independant variable
+```{r}
+tab.IV = rbind(stats.orig.IV, stats.rep.IV)
+rownames(tab.IV) = c("original Study", "reanalysis")
+print(t(tab.IV))
+```
+
+## Covariate
+```{r}
+tab.CV = rbind(stats.orig.CV, stats.rep.CV)
+rownames(tab.CV) = c("original Study", "reanalysis")
+print(t(tab.CV))
+```
+
+
+# Comparing ANCOVA in original study with reanalysis
+## Independant variable
+```{r}
+tab.IV = rbind(stats.orig.IV, stats.rep.IV)
+rownames(tab.IV) = c("original Study", "reanalysis")
+print(t(tab.IV))
+```
+## Covariate
+```{r}
+tab.CV = rbind(stats.orig.CV, stats.rep.CV)
+rownames(tab.CV) = c("original Study", "reanalysis")
+print(t(tab.CV))
+```
+# Assumptions
+## 1.  Homogeneity of variance
+* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
+* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
+* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
+```{r}
+tapply(data$AB38, data$IVlevel, sd)
+leveneTest(AB38 ~ data$IVlevel, data = data) # the variance of group to DV has evidence of significance
+```
+
+
+## 2.  Independence between covariate and IV
+When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
+
+We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
+```{r}
+fit.cv = aov(AB38 ~ IVlevel, data = data) 
+summary(fit.cv)
+```
+
+## 3. Homogeneity of regression slopes
+```{r}
+fit.hrs = aov(AB38 ~ age*IVlevel, data = data)
+Anova(fit.hrs, type=3) # no evidence of interaction, there is homogeneity of IV levels across age
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, 
+       aes(y=AB38, x=age, color=IVlevel, shape=IVlevel)) +
+  geom_jitter(aes(colour = factor(IVlevel))) +
+  geom_smooth(formula = y ~ x, method=lm, se=TRUE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  xlab("age") + ylab("AB30") -> hey
+
+ggplot(viagraData, aes(partnerLibido, libido, colour = dose)) +
+  geom_jitter(aes(colour = factor(dose))) +
+  geom_smooth(method = lm)
 
 ```
-<p align="left">
-  <b> Definitions </b>
-</p>  
-<p align="left">
-- The rationale for ANCOVA is two folds:
-  1. Reduce within-group error variance
-  2. Eliminate confounders
-- An ANOVA is a type of linear regression model, an ANCOVA is an ANOVA, which accounts for potential confounders which are usually continuous variables
-- An ANCOVA model is the analysis of covariance where the variance of the outcome is explained by discrete variable (Independant variable) and covariates which are continuous variables.
-</p>
 
-Checking Assumptions 
-
-## Motivation
-
-<b>  </b> 
-<p align="left">
-- Initial one-way ANOVA show that there is no evidence of significant relationship between dose and libido, motivates to evaluate its underlying covariances to answer :
-- What is the variance explained by three levels of plasma AB?
-- And what is the variance explained by Covariate on SVD marker. 
-</p>
-```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-mod1 <- aov(DV ~ IVlevel, data = data)
-mod1$coefficients
-summary(mod1)
-```
-## Explore Data
+# Additional data exploration
 <p align="left">
 - Boxplot shows: Does different doses produce different outcomes
 </p>
 ```{r, echo= TRUE, include = TRUE, eval = TRUE, tidy = TRUE}
 #IV : Emotion
 par(mfrow=c(1,2))
-beeswarm(DV~IVlevel, data= data, main = "", pch = 16, col = rainbow(8))
-boxplot(DV~IVvalue, data= data, outline = FALSE, main = " ", add= TRUE) 
+beeswarm(AB38 ~ IVlevel, data = data, main = "", pch = 16, col = rainbow(8), add = TRUE)
+boxplot(AB38 ~ IVlevel, data = data, outline = FALSE, main = " ") 
 ```
 ## Explore Data : Descriptives
 <p align="left">
 - Descriptive Statistics
 </p>
 ```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-by(data$DV, data$IVlevel, stat.desc)
+by(data$tbv_b, data$IVlevel, stat.desc)
 ```
 
 ## Explore Data : Graphical analysis for homogeneity of regression slopes
@@ -142,11 +206,11 @@ by(data$DV, data$IVlevel, stat.desc)
 
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 
-data %>% ggplot() +
-+   geom_jitter(aes(COV, DV, colour = factor(EmotionIV))) +
-+   geom_smooth(method = lm)
+ggplot(data) +
+  geom_jitter(data, aes(x=age, y=AB38, colour = factor(IVlevel))) +
+  geom_smooth(x= age, y = AB38, method = lm)
 
-ggplot(data, aes(y = DV, x = EmotionIV, group = factor(EmotionIV), colour = factor(EmotionIV))) +  geom_jitter(aes(colour = factor(EmotionIV))) + geom_smooth(method = lm)
+ggplot(data, aes(y = AB38, x = age, group = factor(age), colour = factor(age))) +  geom_jitter(aes(colour = factor(age))) + geom_smooth(method = lm)
 ```
 
 ## Assumption 1 : Homogeneity of variance
@@ -155,30 +219,24 @@ ggplot(data, aes(y = DV, x = EmotionIV, group = factor(EmotionIV), colour = fact
 - A good double-check of Levene’s test is to look at the highest and lowest variances. For our levels we have standard deviations of .
 </p>
 ```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-leveneTest(data$DV, data$ab38IV, center = median)
-leveneTest(data$DV, data$ab40IV, center = median)
-leveneTest(data$DV, data$ab42IV, center = median)
+leveneTest(data$AB38, data$IVlevel, center = median) #the variances between the levels have no evidence of significance. There is a "common" variance per IV level
 ```
 ## Assumption 2 : Check that the covariate and any independent variables are independent
 
 <p align="left">
 - We run an ANOVA to find out if the covariance independant to each of the IV levels? 
-- The summary results show that on different levels for each IV, there is no evidence of significant association to N1/P2 complex.
+- The summary results show that on different levels for each IV, there is no evidence of significant association to outcome
 </p>
 ```{r, eval = TRUE, echo = TRUE}
-checkIndependenceModel1<-aov(COV ~ ab38IV, data = data) 
-checkIndependenceModel2<-aov(COV ~ ab40IV, data = data)
-checkIndependenceModel3<-aov(COV ~ ab32IV, data = data)
-summary(checkIndependenceModel1)
-summary(checkIndependenceModel2)
-summary(checkIndependenceModel3)
+checkIndependenceModel1<-aov(AB38 ~ IVlevel, data = data) 
+summary(checkIndependenceModel1) # the IV levels are independant to outcome
 ```
 ## Residuals vs Fitted : Testing for Homogeneity of Variance
 <p align="left">
 - The residuals for fitted value are similar to zero, assumption for homogeneity of variance held.
 </p>
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy= TRUE, fig.width = 6, fig.height = 5}
-plot(ancovaModel, which = 1)
+plot(ancovaModel, which = 1) # the residuals are homogenous with mean around zero
 ```
 ## QQ plots
 <p align="left">
@@ -196,7 +254,7 @@ plot(ancovaModel, which = 2)
 - In this method, we are restricted to the Tukey and the Dunnett method.
 </p>
 ```{r, include = TRUE, echo = TRUE, eval = TRUE}
-postHocs<-glht(ancovaModel, linfct = mcp(ab38IV = "Tukey"))
+postHocs<-glht(ancovaModel, linfct = mcp(AB38 = "Tukey"))
 summary(postHocs)
 confint(postHocs)
 ```
