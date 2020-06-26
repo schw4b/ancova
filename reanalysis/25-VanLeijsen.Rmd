@@ -23,8 +23,8 @@ library(tidyr)
 
 # Notes from reading methods section
 
-* Dependant variable: "SVD", a continuous variable measured by SPM12 sytem
-* The independant variables are (categorically) plasma Aβ (three levels : Aβ38, Aβ40, Aβ42)
+* Dependant variable: AB38
+* The independant variables microbleeds and lacunes with two levels each
 * Covariate: age
 
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
@@ -40,89 +40,47 @@ estimates
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
-# PATH = file.path(path.expand("~"), "results", "data", "ancova") # ancova project folder
-# data = read_excel(file.path("..", "dataPrimaryStudies", "25-VanLeijsen", "25-VanLeijsen-1.xlsx"))
-
 data = read_excel("../results/data/25-VanLeijsen/VanLeijsen-1.xlsx")
-
-mod <- lm(AB38 ~ age + hypertension, data= data[data$mb_presence_b == "1",])
-summary(mod)
-
-mod <- lm(AB38 ~ age + hypertension, data= data[data$mb_presence_b == "0",])
-summary(mod)
-
-mod <- lm(AB38 ~ age + hypertension, data= data[data$lac_presence_b == "1",])
-summary(mod)
-
-mod <- lm(AB38 ~ age + hypertension, data= data[data$lac_presence_b == "0",])
-summary(mod)
-
-mod <- lm(tbv_b ~ age + hypertension + AB38, data= data)
-summary(mod)
-
-anov <- aov(AB38 ~ age + hypertension, data= data[data$mb_presence_b == "1",])
-anov
-
-anov <- aov(AB38 ~ age + hypertension, data= data[data$mb_presence_b == "0",])
-anov
-
-anov <- anov(AB38 ~ age + hypertension, data= data[data$mb_presence_b == "1",])
-anov
-data0 = gather(data, key = "IVlevel", "IVvalue", mb_presence_b, lac_presence_b)
-
-data$IV = NA
-
-data$IVValue[data$mb_presence_b == "1",]<- "microbleed"
-
-data[data$mb_presence_b == "1",] == data$IV
-dim(data)
-data$group.factor = NA
-
-if (group.factor) {
-  if (data$IVlevel == "mb_presence_b" & ) {
-    data$group.factor <- "microbleeds"
-  } else {
-     data$group.factor <- "no_mic"
-  }
-} else {
-  if (group.factor) {
-    if (data$IVlevel == "lac_presence_b" & data$IVvalue == "1") <- "bottomright"
-  } else {
-    data$group.factor <- "lac"
-  } else {
-    data$group.factor <- "no_mic"
-  }
-} 
-
-data$group.factor <- ifelse(data$IVlevel == "mb_presence_b" & data$IVvalue == "1", "microbleed", "no_microbleed")
-data$group.factor <- ifelse(data$IVlevel == "lac_presence_b" & data$IVvalue == "1","lac", "no_lac")
+data = data.frame(data)
+str(data)
+data$mb_presence_b = data$mb_presence_b == 1
+data$lac_presence_b = data$lac_presence_b == 1
+data$sex.factor = NA
+data$sex.factor[data$sex == 1] = "female"
+data$sex.factor[data$sex == 2] = "0"
+data$sex.factor[data$sex.factor == 0] = "male"
+data$hypertension.factor = NA
+data$hypertension = data$hypertension == 1
+str(data)
 ```
 
-# Descriptives
-Number of samples and mean (SD) in levels of the independant variables. We reproduce Table 3 and Figure 2A of the study.
+# Descriptives 
+Number of samples and mean (SD) in levels of the independant variables. We reproduce the mean and sd values of Table 2 of this study
+```{r}
+sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 1]), sd(data$AB38[data$mb_presence_b == 1]))
+
+sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 0]), sd(data$AB38[data$mb_presence_b == 0]))
+
+sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 1]), sd(data$AB38[data$mb_presence_b == 1]))
+
+sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 0]), sd(data$AB38[data$lac_presence_b == 0]))
+```
 
 # Reproducing Table 2 
+We verify the p values stated in Table 2 with respect to variables.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
-lm_lac = lm(AB38 ~ sex + age, data = data)
-summary(lm_lac)
-
-
 
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
-ancovaModel <-aov(AB38 ~ age + sex, 
-                  data = data)
-ancova <- aov(AB38 ~ mb_presence_b, data = data)
-ancova
-
-summary(ancovaModel)
-
-lm_ancova
-summary.lm(ancovaModel)
+fit <- aov(AB38 ~ mb_presence_b + lac_presence_b + sex.factor + age + hypertension, data = data)
+summary(fit)
 
 # Orthogonal contrasts
-contrasts(data$IVvalue) = contr.helmert(3) #doesnt work
-result = Anova(ancovaModel, type = 3) # this is not a balanced study
+#contrasts(data$mb_presence_b) = contr.helmert(3) 
+#contrasts(data$lac_presence_b) = contr.helmert(3) 
+result = Anova(fit, type = 3) # this is not a balanced study
 print(result)
+result$Df[4]
+
 ```
 
 ```{r, include=FALSE}
