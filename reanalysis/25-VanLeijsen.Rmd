@@ -18,6 +18,7 @@ library(readxl)
 library(foreign)
 library(readxl)
 library(ggplot2)
+library(tidyr)
 ```
 
 # Notes from reading methods section
@@ -39,48 +40,51 @@ estimates
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
-data = read_excel("../results/data/25-VanLeijsen/VanLeijstudyNo25DATA.xlsx")
-#data = gather(data, key = "IVlevel", "IVvalue", mb_presence_b, -lac_presence_b) 
+# PATH = file.path(path.expand("~"), "results", "data", "ancova") # ancova project folder
+# data = read_excel(file.path("..", "dataPrimaryStudies", "25-VanLeijsen", "25-VanLeijsen-1.xlsx"))
 
-data = data[data$IVvalue == "0",] # we chose mb_presence_b = 1
+data = read_excel("../results/data/25-VanLeijsen/VanLeijsen-1.xlsx")
+data = gather(data, key = "IVlevel", "IVvalue", mb_presence_b, lac_presence_b)
+dim(data)
+data$group.factor = NA
 
-cor(data$mb_presence_b, data$lac_presence_b, method = "spearman")
+if (group.factor) {
+  if (data$IVlevel == "mb_presence_b" & data$IVvalue == "1") {
+    data$group.factor <- "microbleeds"
+  } else {
+     data$group.factor <- "no_mic"
+  }
+} else {
+  if (group.factor) {
+    if (data$IVlevel == "lac_presence_b" & data$IVvalue == "1") <- "bottomright"
+  } else {
+    data$group.factor <- "lac"
+  } else {
+    data$group.factor <- "no_mic"
+  }
+} 
 
-
-# datanolac = data[data$mb_presence_b == "0"]
-# datamic = data[data$mb_presence_b == "1"]
-# datanomic = data[data$mb_presence_b == "0"]
-
-#DV = data$tbv_b
-# there are two covariates analysed in this study
-#ageCOV = data$age
-#sexCOV = data$sex
-# IV is plasma AB which has three levels
-# ab38IV = data$AB38
-# ab40IV = data$AB40
-# ab42IV = data$AB42
-
-# subset this data 
-# datalac = data[data$mb_presence_b == "1"]
-# datanolac = data[data$mb_presence_b == "0"]
-# datamic = data[data$mb_presence_b == "1"]
-# datanomic = data[data$mb_presence_b == "0"]
-#data = gather(data, key = "SVDmarker", "rate", mb_presence_b, lac_presence_b)
-#data
+data$group.factor <- ifelse(data$IVlevel == "mb_presence_b" & data$IVvalue == "1", "microbleed", "no_microbleed")
+data$group.factor <- ifelse(data$IVlevel == "lac_presence_b" & data$IVvalue == "1","lac", "no_lac")
 ```
 
 # Descriptives
-## Dependant variable
 Number of samples and mean (SD) in levels of the independant variables. We reproduce Table 3 and Figure 2A of the study.
 
-# Main analysis ANCOVA
+# Reproducing Table 2 
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+lm_lac = lm(AB38 ~ sex + age, data = data)
+summary(lm_lac)
+
+
+
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
-ancovaModel <-aov(AB38 ~ + age + sex, 
+ancovaModel <-aov(AB38 ~ age + sex, 
                   data = data)
 ancova <- aov(AB38 ~ mb_presence_b, data = data)
 ancova
-summary(ancova)
+
+summary(ancovaModel)
 
 lm_ancova
 summary.lm(ancovaModel)
