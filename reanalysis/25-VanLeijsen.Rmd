@@ -44,12 +44,42 @@ Data is loaded, reshaped if necessary, and factors are specified.
 # data = read_excel(file.path("..", "dataPrimaryStudies", "25-VanLeijsen", "25-VanLeijsen-1.xlsx"))
 
 data = read_excel("../results/data/25-VanLeijsen/VanLeijsen-1.xlsx")
-data = gather(data, key = "IVlevel", "IVvalue", mb_presence_b, lac_presence_b)
+
+mod <- lm(AB38 ~ age + hypertension, data= data[data$mb_presence_b == "1",])
+summary(mod)
+
+mod <- lm(AB38 ~ age + hypertension, data= data[data$mb_presence_b == "0",])
+summary(mod)
+
+mod <- lm(AB38 ~ age + hypertension, data= data[data$lac_presence_b == "1",])
+summary(mod)
+
+mod <- lm(AB38 ~ age + hypertension, data= data[data$lac_presence_b == "0",])
+summary(mod)
+
+mod <- lm(tbv_b ~ age + hypertension + AB38, data= data)
+summary(mod)
+
+anov <- aov(AB38 ~ age + hypertension, data= data[data$mb_presence_b == "1",])
+anov
+
+anov <- aov(AB38 ~ age + hypertension, data= data[data$mb_presence_b == "0",])
+anov
+
+anov <- anov(AB38 ~ age + hypertension, data= data[data$mb_presence_b == "1",])
+anov
+data0 = gather(data, key = "IVlevel", "IVvalue", mb_presence_b, lac_presence_b)
+
+data$IV = NA
+
+data$IVValue[data$mb_presence_b == "1",]<- "microbleed"
+
+data[data$mb_presence_b == "1",] == data$IV
 dim(data)
 data$group.factor = NA
 
 if (group.factor) {
-  if (data$IVlevel == "mb_presence_b" & data$IVvalue == "1") {
+  if (data$IVlevel == "mb_presence_b" & ) {
     data$group.factor <- "microbleeds"
   } else {
      data$group.factor <- "no_mic"
