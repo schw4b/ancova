@@ -19,22 +19,30 @@ library(foreign)
 library(readxl)
 library(ggplot2)
 library(tidyr)
+library(beeswarm)
 ```
 
 # Notes from reading methods section
 
 * Dependant variable: AB38
-* The independant variables microbleeds and lacunes with two levels each
+* The independant variables 
+  * ≥ 1 microbleeds (n = 81) 
+  * no microbleed (n=405)
+  * ≥ 1 lacunes (n = 132)
+  * no lacunes (n = 355)
 * Covariate: age
 
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
-Fvalue =  NA
-df1 = NA
-df2 = NA
-pvalue = NA
-estimates = as.data.frame(cbind(F, df1, df2, pvalue))
-rownames(estimates) = c("Study")
-estimates
+stats.orig.IV = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = 0.01,
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
+
+stats.orig.CV = stats.orig.IV
 ```
 
 # Reading data
@@ -47,39 +55,116 @@ data$mb_presence_b = data$mb_presence_b == 1
 data$lac_presence_b = data$lac_presence_b == 1
 data$sex.factor = NA
 data$sex.factor[data$sex == 1] = "female"
-data$sex.factor[data$sex == 2] = "0"
-data$sex.factor[data$sex.factor == 0] = "male"
+data$sex[data$sex == 2] = "0"
+data$sex.factor[data$sex == 0] = "male"
 data$hypertension.factor = NA
-data$hypertension = data$hypertension == 1
-str(data)
+data$hypertension  = data$hypertension == 1 
+
+data$Group.factor = NA
+data[data$mb_presence_b == TRUE,]$Group.factor = "microbleed"
+data[data$mb_presence_b == FALSE,]$Group.factor = "no microbleed"
+data[data$lac_presence_b == TRUE,]$Group.factor = "lacunes"
+data[data$lac_presence_b == FALSE,]$Group.factor = "no lacunes"
+unique(data$Group.factor)
+data$Group.factor = factor(data$Group.factor,
+                           levels = c("microbleed", "no microbleed",
+                                      "lacunes", "no lacunes"))
+
+
 ```
 
 # Descriptives 
+## DV with boxplot
 Number of samples and mean (SD) in levels of the independant variables. We reproduce the mean and sd values of Table 2 of this study
 ```{r}
-sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 1]), sd(data$AB38[data$mb_presence_b == 1]))
+a = sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 0]), sd(data$AB38[data$mb_presence_b == 0]))
+b = sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 1]), sd(data$AB38[data$mb_presence_b == 1]))
 
-sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 0]), sd(data$AB38[data$mb_presence_b == 0]))
+c = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 0]), sd(data$AB38[data$lac_presence_b == 0]))
+d = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 1]), sd(data$AB38[data$mb_presence_b == 1]))
 
-sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 1]), sd(data$AB38[data$mb_presence_b == 1]))
+idx = c(1, 3, 2, 4) # sorting as in publication
+tab.dv = array(NA, dim=c(4,3))
+tab.dv[,1] = levels(data$Group.factor)
+tab.dv[,2] = c("81", "405", "132", "355")
+tab.dv[,3] = c(a, b, c, d)
+colnames(tab.dv) = c("group", "n", "mean (SD)")
+print(tab.dv)
+```
+# boxplot with DV
+```{r}
+#IV : mb_presence_b
+ggplot(data, aes(y=AB38, x = mb_presence_b, color =mb_presence_b )) +
+  geom_jitter() +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("Microbleed Presence") + ylab("AB38") + ggtitle("Dependant variable")
+#IV : lac_presence_b
+ggplot(data, aes(y=AB38, x = lac_presence_b, color =lac_presence_b )) +
+  geom_jitter() +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("Lacune Presence") + ylab("AB38") + ggtitle("Dependant variable")
+```
+  
+# Descriptives 
+## COV with boxplot
+```{r}
+e = sprintf("%.1f (%.1f)", mean(data$age[data$mb_presence_b == 0]), sd(data$age[data$mb_presence_b == 0]))
+f = sprintf("%.1f (%.1f)", mean(data$age[data$mb_presence_b == 1]), sd(data$age[data$mb_presence_b == 1]))
+g = sprintf("%.1f (%.1f)", mean(data$age[data$lac_presence_b == 0]), sd(data$age[data$lac_presence_b == 0]))
+h = sprintf("%.1f (%.1f)", mean(data$age[data$lac_presence_b == 1]), sd(data$age[data$mb_presence_b == 1]))
 
-sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 0]), sd(data$AB38[data$lac_presence_b == 0]))
+idx = c(1, 3, 2, 4) # sorting as in publication
+tab.cv = array(NA, dim=c(4,3))
+tab.cv[,1] = levels(data$Group.factor)
+tab.cv[,2] = c("81", "405", "132", "355")
+tab.cv[,3] = c(e,f,g,h)
+colnames(tab.cv) = c("group", "n", "mean (SD)")
+print(tab.cv)
 ```
 
-# Reproducing Table 2 
+```{r}
+ggplot(data, 
+       aes(y=AB38, x=age, color=Group.factor)) +
+  geom_jitter() +
+  geom_boxplot() +
+  theme(legend.title = element_blank()) +
+  labs(x = "age", y = "AB30", title = "" )
+```
+
+# Main analysis ANCOVA
+```{r, include=FALSE}
+stats.orig.IV = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = NA,
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
+
+stats.orig.CV = stats.orig.IV
+
+# enter all results from primary study here
+stats.orig.IV$pvalue = 0.001
+``` 
+
 We verify the p values stated in Table 2 with respect to variables.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+# Orthogonal contrasts
+contrasts(data$Group.factor) = contr.helmert(4) 
+result = Anova(fit, type = 3) # this is not a balanced study
+print(result)
+result$Df[4]
 
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
 fit <- aov(AB38 ~ mb_presence_b + lac_presence_b + sex.factor + age + hypertension, data = data)
 summary(fit)
-
-# Orthogonal contrasts
-#contrasts(data$mb_presence_b) = contr.helmert(3) 
-#contrasts(data$lac_presence_b) = contr.helmert(3) 
-result = Anova(fit, type = 3) # this is not a balanced study
-print(result)
-result$Df[4]
 
 ```
 
@@ -103,32 +188,15 @@ stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
 )
 ```
 
-
 # Comparing ANCOVA in original study with reanalysis
 ## Independant variable
-```{r}
-tab.IV = rbind(stats.orig.IV, stats.rep.IV)
-rownames(tab.IV) = c("original Study", "reanalysis")
-print(t(tab.IV))
-```
-
-## Covariate
-```{r}
-tab.CV = rbind(stats.orig.CV, stats.rep.CV)
-rownames(tab.CV) = c("original Study", "reanalysis")
-print(t(tab.CV))
-```
-
-
-# Comparing ANCOVA in original study with reanalysis
-## Independant variable
-```{r}
+```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 tab.IV = rbind(stats.orig.IV, stats.rep.IV)
 rownames(tab.IV) = c("original Study", "reanalysis")
 print(t(tab.IV))
 ```
 ## Covariate
-```{r}
+```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 tab.CV = rbind(stats.orig.CV, stats.rep.CV)
 rownames(tab.CV) = c("original Study", "reanalysis")
 print(t(tab.CV))
@@ -138,159 +206,35 @@ print(t(tab.CV))
 * ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
 * When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
 * Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
-```{r}
-tapply(data$AB38, data$IVlevel, sd)
-leveneTest(AB38 ~ data$IVlevel, data = data) # the variance of group to DV has evidence of significance
+```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+tapply(data$AB38, data$mb_presence_b, sd)
+tapply(data$AB38, data$lac_presence_b, sd)
+leveneTest(AB38 ~ lac_presence_b, data = data) 
+leveneTest(AB38 ~ mb_presence_b, data = data)
 ```
-
-
 ## 2.  Independence between covariate and IV
-When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
-
-We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
-```{r}
-fit.cv = aov(AB38 ~ IVlevel, data = data) 
+The IV of this study have evidence of significant effect to the plasma level AB38.
+```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+fit.cv = aov(AB38 ~ lac_presence_b + mb_presence_b, data = data) 
 summary(fit.cv)
 ```
 
 ## 3. Homogeneity of regression slopes
-```{r}
-fit.hrs = aov(AB38 ~ age*IVlevel, data = data)
-Anova(fit.hrs, type=3) # no evidence of interaction, there is homogeneity of IV levels across age
-```
-
-```{r fig.height=2, fig.width=3.5}
-ggplot(data, 
-       aes(y=AB38, x=age, color=IVlevel, shape=IVlevel)) +
-  geom_jitter(aes(colour = factor(IVlevel))) +
-  geom_smooth(formula = y ~ x, method=lm, se=TRUE, fullrange=TRUE) +
-  theme_minimal() +
-  theme(legend.title = element_blank()) +
-  xlab("age") + ylab("AB30") -> hey
-
-ggplot(viagraData, aes(partnerLibido, libido, colour = dose)) +
-  geom_jitter(aes(colour = factor(dose))) +
-  geom_smooth(method = lm)
-
-```
-
-# Additional data exploration
-<p align="left">
-- Boxplot shows: Does different doses produce different outcomes
-</p>
-```{r, echo= TRUE, include = TRUE, eval = TRUE, tidy = TRUE}
-#IV : Emotion
-par(mfrow=c(1,2))
-beeswarm(AB38 ~ IVlevel, data = data, main = "", pch = 16, col = rainbow(8), add = TRUE)
-boxplot(AB38 ~ IVlevel, data = data, outline = FALSE, main = " ") 
-```
-## Explore Data : Descriptives
-<p align="left">
-- Descriptive Statistics
-</p>
-```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-by(data$tbv_b, data$IVlevel, stat.desc)
-```
-
-## Explore Data : Graphical analysis for homogeneity of regression slopes
-<p align="left">
-- Say we want to know the overall relationship between Viagra and Partner libido, ignoring which dose groups the data points belong to, we therefore assume that the relationship between dose group and partner libido is constant across all doses. If the latter is not true, then the overall relationship between Viagra and Partner libido is inaccurate.
-- there is homogeneity of regression slopes for Placebo and Lower doses
-- there is no homogeneity of regression slopes for Placebo and High dose
-- That's ok because there are situations where you might actually expect regression slopes to differ across groups and that this is, in itself, an interesting hypothesis. 
-</p>
-
-## Graphical Anaylsis for homogeneity of regression slopes
-
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+fit.hrs = aov(AB38 ~ age*mb_presence_b, data = data)
+Anova(fit.hrs, type=3) # no evidence of interaction, there is homogeneity of IV levels across age
+fit.hrs = aov(AB38 ~ age*lac_presence_b, data = data)
+Anova(fit.hrs, type=3) 
 
-ggplot(data) +
-  geom_jitter(data, aes(x=age, y=AB38, colour = factor(IVlevel))) +
-  geom_smooth(x= age, y = AB38, method = lm)
-
-ggplot(data, aes(y = AB38, x = age, group = factor(age), colour = factor(age))) +  geom_jitter(aes(colour = factor(age))) + geom_smooth(method = lm)
 ```
 
-## Assumption 1 : Homogeneity of variance
-<p align="left">
-- Levene's Test: Are the variances between levels on outcome very similar ?
-- A good double-check of Levene’s test is to look at the highest and lowest variances. For our levels we have standard deviations of .
-</p>
-```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-leveneTest(data$AB38, data$IVlevel, center = median) #the variances between the levels have no evidence of significance. There is a "common" variance per IV level
-```
-## Assumption 2 : Check that the covariate and any independent variables are independent
-
-<p align="left">
-- We run an ANOVA to find out if the covariance independant to each of the IV levels? 
-- The summary results show that on different levels for each IV, there is no evidence of significant association to outcome
-</p>
-```{r, eval = TRUE, echo = TRUE}
-checkIndependenceModel1<-aov(AB38 ~ IVlevel, data = data) 
-summary(checkIndependenceModel1) # the IV levels are independant to outcome
-```
-## Residuals vs Fitted : Testing for Homogeneity of Variance
-<p align="left">
-- The residuals for fitted value are similar to zero, assumption for homogeneity of variance held.
-</p>
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy= TRUE, fig.width = 6, fig.height = 5}
-plot(ancovaModel, which = 1) # the residuals are homogenous with mean around zero
-```
-## QQ plots
-<p align="left">
-- Residuals are normally distributed
-</p>
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy =TRUE, fig.width = 4, fig.height = 5}
-plot(ancovaModel, which = 2)
-```
-## Post Hoc Tests 
-<p align="left">
-- A Tukey-Ascombe test is performed via a general linear hypotheses function from library(multcomp).
-- It is used for a pairwise comparison t test between doses for between groups differences
-- In other words: we want to test differences between the adjusted means.
-- In this case, the differences between IV levels can be compared with evidence of significance.
-- In this method, we are restricted to the Tukey and the Dunnett method.
-</p>
-```{r, include = TRUE, echo = TRUE, eval = TRUE}
-postHocs<-glht(ancovaModel, linfct = mcp(AB38 = "Tukey"))
-summary(postHocs)
-confint(postHocs)
-```
-## Going back to Basic Assumptions : Homogeneity of Regression Slopes
-<p align="left">
-There is a positive relationship between all IV and Covariate.
-</p>
-```{r, include = TRUE, echo = TRUE, eval = TRUE}
-#IVA <- c(EmotionIV, IntensityIV, ElectrodeIV)
-# IVA[1]
-# for (i in 1:3){assign(paste0("hoRs",i, aov(DV ~ COV*IV[i], data = data)))} 
-
-hoRS1<-aov(DV ~ ageCOV*ab38IV, data = data)
-hoRS2<-aov(DV ~ gaeCOV*ab40IV, data = data)
-hoRS2<-aov(DV ~ gaeCOV*ab41IV, data = data)
-
-hoRS1<-update(ancovaModel, .~. + ageCOV:ab38IV)
-hoRS2<-update(ancovaModel, .~. + ageCOV:ab40IV)
-hoR3S<-update(ancovaModel, .~. + gaeCOV:ab42IV)
-
-summary(hoRS1) 
-summary(hoRS2)
-summary(hoR3S)
-
-df01 <- Anova(hoRS1, type="I")
-df02 <- Anova(hoRS1, type="I")
-df03 <- Anova(hoRS1, type="I")
-
-df <- as.data.frame(c(df01[3, 3:4],df02[3, 3:4],df03[3, 3:4]))
-```
-
-## Creating a data frame 
-<p align="left">
-- 
-</p>
-```{r}
-reanalysis = cbind(FvalueR, df1R, df2R, pvalueR)
-rownames(reanalysis) = c("Reanalysis")
-estimates = rbind(estimates, reanalysis)
+## Independance of Covariate with Independant Variables
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=AB38, x= age, color= mb_presence_b)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("AB38") + ggtitle("Covarate")
 ```
 
