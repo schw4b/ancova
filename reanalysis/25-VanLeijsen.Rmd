@@ -2,7 +2,7 @@
 title: "25-VanLeigsen"
 author: "Simon Schwab, Audrey Yeo"
 date: "11/13/2019"
-output: html_document
+output: pdf_document
 ---
 
 # Reference
@@ -131,8 +131,8 @@ print(tab.cv)
 ```{r}
 ggplot(data, 
        aes(y=AB38, x=age, color=Group.factor)) +
-  geom_jitter() +
   geom_boxplot() +
+  geom_jitter() +
   theme(legend.title = element_blank()) +
   labs(x = "age", y = "AB30", title = "" )
 ```
@@ -158,13 +158,13 @@ We verify the p values stated in Table 2 with respect to variables.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 # Orthogonal contrasts
 contrasts(data$Group.factor) = contr.helmert(4) 
-result = Anova(fit, type = 3) # this is not a balanced study
-print(result)
-result$Df[4]
 
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
 fit <- aov(AB38 ~ mb_presence_b + lac_presence_b + sex.factor + age + hypertension, data = data)
 summary(fit)
+result = Anova(fit, type = 3) # this is not a balanced study
+print(result)
+result$Df[4]
 
 ```
 
@@ -233,8 +233,17 @@ Anova(fit.hrs, type=3)
 ggplot(data, aes(y=AB38, x= age, color= mb_presence_b)) +
   geom_boxplot() +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("group") + ylab("AB38") + ggtitle("Covarate")
+  xlab("Microbleed Presence") + ylab("AB38") + ggtitle("Covarate")
+
+ggplot(data, aes(y=AB38, x= age, color= lac_presence_b)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("Lacune Presence") + ylab("AB38") + ggtitle("Covarate")
 ```
 
