@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 # Reference
-Van Leijsen et al. (2017). Plasma Aβ (Amyloid-β) Levels and Severity and Progression of Small Vessel Disease. *Stroke*, 16(5), 351–359. https://doi.org/10.1161/STROKEAHA.117.019810
+Van Leijsen et al. (2017). Plasma AB (Amyloid-B) Levels and Severity and Progression of Small Vessel Disease. Stroke, 16(5), 351–359. https://doi.org/10.1161/STROKEAHA.117.019810
 
 We first load the appropriate packages
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
@@ -26,18 +26,18 @@ library(beeswarm)
 
 * Dependant variable: AB38
 * The independant variables 
-  * ≥ 1 microbleeds (n = 81) 
+  * 1 or more microbleeds (n = 81) 
   * no microbleed (n=405)
-  * ≥ 1 lacunes (n = 132)
+  * 1 or more lacunes (n = 132)
   * no lacunes (n = 355)
 * Covariate: age
 
-```{r, eval=TRUE, echo=FALSE, include = FALSE}
+```{r}
 stats.orig.IV = data.frame(
   Fvalue =  NA,
   df1 = NA,
   df2 = NA,
-  pvalue = 0.01,
+  pvalue = 0.01, # for microbleed presence and for lacune presence groups
   MD = NA,
   lowerCI = NA,
   upperCI = NA)
@@ -47,7 +47,7 @@ stats.orig.CV = stats.orig.IV
 
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+```{r}
 data = read_excel("../results/data/25-VanLeijsen/VanLeijsen-1.xlsx")
 data = data.frame(data)
 str(data)
@@ -60,39 +60,39 @@ data$sex.factor[data$sex == 0] = "male"
 data$hypertension.factor = NA
 data$hypertension  = data$hypertension == 1 
 
-data$Group.factor = NA
+data$Group.factor = NA # only used for table
 data[data$mb_presence_b == TRUE,]$Group.factor = "microbleed"
 data[data$mb_presence_b == FALSE,]$Group.factor = "no microbleed"
 data[data$lac_presence_b == TRUE,]$Group.factor = "lacunes"
 data[data$lac_presence_b == FALSE,]$Group.factor = "no lacunes"
 unique(data$Group.factor)
 data$Group.factor = factor(data$Group.factor,
-                           levels = c("microbleed", "no microbleed",
-                                      "lacunes", "no lacunes"))
+                           levels = c("no microbleed", "microbleed",
+                                      "no lacunes", "lacunes"))
 
 
 ```
 
 # Descriptives 
-## DV with boxplot
 Number of samples and mean (SD) in levels of the independant variables. We reproduce the mean and sd values of Table 2 of this study
 ```{r}
 a = sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 0]), sd(data$AB38[data$mb_presence_b == 0]))
 b = sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 1]), sd(data$AB38[data$mb_presence_b == 1]))
 
 c = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 0]), sd(data$AB38[data$lac_presence_b == 0]))
-d = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 1]), sd(data$AB38[data$mb_presence_b == 1]))
+d = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 1]), sd(data$AB38[data$lac_presence_b == 1]))
 
 idx = c(1, 3, 2, 4) # sorting as in publication
 tab.dv = array(NA, dim=c(4,3))
 tab.dv[,1] = levels(data$Group.factor)
-tab.dv[,2] = c("81", "405", "132", "355")
+tab.dv[,2] = c("405", "81", "355", "132")
 tab.dv[,3] = c(a, b, c, d)
 colnames(tab.dv) = c("group", "n", "mean (SD)")
 print(tab.dv)
 ```
 # boxplot with DV
-```{r}
+* Upon visual inspection, each level of each independant group seem to have a similar outcome effect.
+```{r, fig.height=3, fig.width=4.5}
 #IV : mb_presence_b
 ggplot(data, aes(y=AB38, x = mb_presence_b, color =mb_presence_b )) +
   geom_jitter() +
@@ -100,7 +100,8 @@ ggplot(data, aes(y=AB38, x = mb_presence_b, color =mb_presence_b )) +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("Microbleed Presence") + ylab("AB38") + ggtitle("Dependant variable")
+  xlab("Microbleed Presence") + ylab("AB38") + 
+  ggtitle("Dependant variable with Microbleed presence")
 #IV : lac_presence_b
 ggplot(data, aes(y=AB38, x = lac_presence_b, color =lac_presence_b )) +
   geom_jitter() +
@@ -108,37 +109,48 @@ ggplot(data, aes(y=AB38, x = lac_presence_b, color =lac_presence_b )) +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("Lacune Presence") + ylab("AB38") + ggtitle("Dependant variable")
+  xlab("Lacune Presence") + ylab("AB38") + 
+  ggtitle("Dependant variable with Lacune presence")
 ```
   
 # Descriptives 
 ## COV with boxplot
 ```{r}
-e = sprintf("%.1f (%.1f)", mean(data$age[data$mb_presence_b == 0]), sd(data$age[data$mb_presence_b == 0]))
-f = sprintf("%.1f (%.1f)", mean(data$age[data$mb_presence_b == 1]), sd(data$age[data$mb_presence_b == 1]))
+e = sprintf("%.1f (%.1f)", mean(data$age[data$mb_presence_b == 0]), 
+            sd(data$age[data$mb_presence_b == 0]))
+f = sprintf("%.1f (%.1f)", mean(data$age[data$mb_presence_b == 1]), 
+            sd(data$age[data$mb_presence_b == 1]))
 g = sprintf("%.1f (%.1f)", mean(data$age[data$lac_presence_b == 0]), sd(data$age[data$lac_presence_b == 0]))
-h = sprintf("%.1f (%.1f)", mean(data$age[data$lac_presence_b == 1]), sd(data$age[data$mb_presence_b == 1]))
+h = sprintf("%.1f (%.1f)", mean(data$age[data$lac_presence_b == 1]), sd(data$age[data$lac_presence_b == 1]))
 
 idx = c(1, 3, 2, 4) # sorting as in publication
 tab.cv = array(NA, dim=c(4,3))
 tab.cv[,1] = levels(data$Group.factor)
-tab.cv[,2] = c("81", "405", "132", "355")
+tab.cv[,2] = c("405", "81", "355" , "132")
 tab.cv[,3] = c(e,f,g,h)
 colnames(tab.cv) = c("group", "n", "mean (SD)")
 print(tab.cv)
 ```
-
-```{r}
+* Age upon visual inspection is similar between groups
+```{r, fig.height=3, fig.width=4.5}
 ggplot(data, 
-       aes(y=AB38, x=age, color=Group.factor)) +
+       aes(y=age, x=mb_presence_b, color=mb_presence_b)) +
   geom_boxplot() +
   geom_jitter() +
-  theme(legend.title = element_blank()) +
-  labs(x = "age", y = "AB30", title = "" )
+  theme(legend.title = element_blank()) + theme_minimal() + 
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  labs(x = "Lacune presence", y = "Age", title = "" )
+ggplot(data, 
+       aes(y=age, x=lac_presence_b, color=lac_presence_b)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme(legend.title = element_blank()) + theme_minimal() + 
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  labs(x = "Lacune presence", y = "Age", title = "" )
 ```
 
 # Main analysis ANCOVA
-```{r, include=FALSE}
+```{r}
 stats.orig.IV = data.frame(
   Fvalue =  NA,
   df1 = NA,
@@ -155,20 +167,19 @@ stats.orig.IV$pvalue = 0.001
 ``` 
 
 We verify the p values stated in Table 2 with respect to variables.
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+* There is evidence of significance that Age as a covariate contribute to variance in outcome (p = 8.037e-05)
+```{r, include = FALSE}
 # Orthogonal contrasts
 contrasts(data$Group.factor) = contr.helmert(4) 
 
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
-fit <- aov(AB38 ~ mb_presence_b + lac_presence_b + sex.factor + age + hypertension, data = data)
+fit <- aov(AB38 ~ age + mb_presence_b + lac_presence_b + sex.factor + hypertension, data = data)
 summary(fit)
 result = Anova(fit, type = 3) # this is not a balanced study
 print(result)
-result$Df[4]
-
 ```
 
-```{r, include=FALSE}
+```{r}
 stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
                           df1 = result$Df[3],
                           df2 = result$Df[4],
@@ -190,13 +201,13 @@ stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
 
 # Comparing ANCOVA in original study with reanalysis
 ## Independant variable
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+```{r}
 tab.IV = rbind(stats.orig.IV, stats.rep.IV)
 rownames(tab.IV) = c("original Study", "reanalysis")
 print(t(tab.IV))
 ```
 ## Covariate
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+```{r}
 tab.CV = rbind(stats.orig.CV, stats.rep.CV)
 rownames(tab.CV) = c("original Study", "reanalysis")
 print(t(tab.CV))
@@ -206,29 +217,31 @@ print(t(tab.CV))
 * ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
 * When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
 * Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+* In this study, there is homogeneity of variance
+```{r}
 tapply(data$AB38, data$mb_presence_b, sd)
 tapply(data$AB38, data$lac_presence_b, sd)
 leveneTest(AB38 ~ lac_presence_b, data = data) 
 leveneTest(AB38 ~ mb_presence_b, data = data)
 ```
 ## 2.  Independence between covariate and IV
-The IV of this study have evidence of significant effect to the plasma level AB38.
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+* The IV of this study have evidence of significant effect to the plasma level AB38.
+```{r}
 fit.cv = aov(AB38 ~ lac_presence_b + mb_presence_b, data = data) 
 summary(fit.cv)
 ```
 
 ## 3. Homogeneity of regression slopes
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
+* There is no evidence of significant interaction between covariate and independant variable. Thus we can assume homogeneity of regression slope
+```{r}
 fit.hrs = aov(AB38 ~ age*mb_presence_b, data = data)
 Anova(fit.hrs, type=3) # no evidence of interaction, there is homogeneity of IV levels across age
 fit.hrs = aov(AB38 ~ age*lac_presence_b, data = data)
 Anova(fit.hrs, type=3) 
-
 ```
 
-## Independance of Covariate with Independant Variables
+## Independance of Covariate with Independant Variables (Visual inspection of Homogeneity of Regression slopes)
+* Visually, the two levels of each independant variable follows the same pattern - there seems to be independance of Covariate versus independant variable.
 ```{r fig.height=2, fig.width=3.5}
 ggplot(data, aes(y=AB38, x= age, color= mb_presence_b)) +
   geom_boxplot() +
@@ -236,7 +249,7 @@ ggplot(data, aes(y=AB38, x= age, color= mb_presence_b)) +
   geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("Microbleed Presence") + ylab("AB38") + ggtitle("Covarate")
+  xlab("Age") + ylab("AB38") + ggtitle("Covariate with Microbleed presence")
 
 ggplot(data, aes(y=AB38, x= age, color= lac_presence_b)) +
   geom_boxplot() +
@@ -244,6 +257,6 @@ ggplot(data, aes(y=AB38, x= age, color= lac_presence_b)) +
   geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("Lacune Presence") + ylab("AB38") + ggtitle("Covarate")
+  xlab("Age") + ylab("AB38") + ggtitle("Covariate with Lacunes presence")
 ```
 
