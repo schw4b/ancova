@@ -170,7 +170,7 @@ contrasts(data$mb_presence_b) = contr.helmert(2)
 contrasts(data$lac_presence_b) = contr.helmert(2) 
 
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
-fit <- aov(AB38 ~ age + mb_presence_b + lac_presence_b + sex.factor + hypertension, data = data)
+fit <- aov(AB38 ~ mb_presence_b*lac_presence_b + age + sex.factor + hypertension, data = data)
 summary(fit)
 result = Anova(fit, type = 3) # this is not a balanced study
 print(result)
