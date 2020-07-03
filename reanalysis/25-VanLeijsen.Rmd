@@ -20,7 +20,6 @@ library(readxl)
 library(ggplot2)
 library(tidyr)
 library(beeswarm)
-#heyheheh
 ```
 
 # Notes from reading methods section
@@ -31,7 +30,7 @@ library(beeswarm)
   * no microbleed (n=405)
   * 1 or more lacunes (n = 132)
   * no lacunes (n = 355)
-* Covariate: age
+* Covariate: age, sex and hypertension
 
 ```{r}
 stats.orig.IV = data.frame(
@@ -70,8 +69,6 @@ unique(data$Group.factor)
 data$Group.factor = factor(data$Group.factor,
                            levels = c("no microbleed", "microbleed",
                                       "no lacunes", "lacunes"))
-
-
 ```
 
 # Descriptives 
@@ -96,7 +93,6 @@ print(tab.dv)
 ```{r, fig.height=3, fig.width=4.5}
 #IV : mb_presence_b
 ggplot(data, aes(y=AB38, x = mb_presence_b, color =mb_presence_b )) +
-  geom_jitter() +
   geom_boxplot() +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
   theme_minimal() +
@@ -105,7 +101,6 @@ ggplot(data, aes(y=AB38, x = mb_presence_b, color =mb_presence_b )) +
   ggtitle("Dependant variable with Microbleed presence")
 #IV : lac_presence_b
 ggplot(data, aes(y=AB38, x = lac_presence_b, color =lac_presence_b )) +
-  geom_jitter() +
   geom_boxplot() +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
   theme_minimal() +
@@ -137,14 +132,14 @@ print(tab.cv)
 ggplot(data, 
        aes(y=age, x=mb_presence_b, color=mb_presence_b)) +
   geom_boxplot() +
-  geom_jitter() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
   theme(legend.title = element_blank()) + theme_minimal() + 
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
   labs(x = "Lacune presence", y = "Age", title = "" )
 ggplot(data, 
        aes(y=age, x=lac_presence_b, color=lac_presence_b)) +
   geom_boxplot() +
-  geom_jitter() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
   theme(legend.title = element_blank()) + theme_minimal() + 
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
   labs(x = "Lacune presence", y = "Age", title = "" )
@@ -164,14 +159,15 @@ stats.orig.IV = data.frame(
 stats.orig.CV = stats.orig.IV
 
 # enter all results from primary study here
-stats.orig.IV$pvalue = 0.001
+stats.orig.IV$pvalue = 0.01
 ``` 
 
 We verify the p values stated in Table 2 with respect to variables.
 * There is evidence of significance that Age as a covariate contribute to variance in outcome (p = 8.037e-05)
-```{r, include = FALSE}
+```{r}
 # Orthogonal contrasts
-contrasts(data$Group.factor) = contr.helmert(4) 
+contrasts(data$mb_presence_b) = contr.helmert(2) 
+contrasts(data$lac_presence_b) = contr.helmert(2) 
 
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
 fit <- aov(AB38 ~ age + mb_presence_b + lac_presence_b + sex.factor + hypertension, data = data)
