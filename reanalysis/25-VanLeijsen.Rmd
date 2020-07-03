@@ -1,6 +1,6 @@
 ---
 title: "25-VanLeijsen"
-author: "Simon Schwab, Audrey Yeo"
+author: "Audrey Yeo"
 date: "11/13/2019"
 output: pdf_document
 ---
@@ -37,7 +37,7 @@ stats.orig.IV = data.frame(
   Fvalue =  NA,
   df1 = NA,
   df2 = NA,
-  pvalue = 0.01, # for microbleed presence and for lacune presence groups
+  pvalue = "<0.01", # for microbleed presence and for lacune presence groups
   MD = NA,
   lowerCI = NA,
   upperCI = NA)
@@ -54,9 +54,10 @@ str(data)
 data$mb_presence_b = data$mb_presence_b == 1
 data$lac_presence_b = data$lac_presence_b == 1
 data$sex.factor = NA
-data$sex.factor[data$sex == 1] = "female"
+data$sex.factor[data$sex == 1] = "male"
 data$sex[data$sex == 2] = "0"
-data$sex.factor[data$sex == 0] = "male"
+data$sex.factor[data$sex == 0] = "female"
+data$sex.factor = as.factor(data$sex.factor)
 data$hypertension.factor = NA
 data$hypertension  = data$hypertension == 1 
 
@@ -171,21 +172,28 @@ contrasts(data$lac_presence_b) = contr.helmert(2)
 
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
 fit <- aov(AB38 ~ mb_presence_b*lac_presence_b + age + sex.factor + hypertension, data = data)
-summary(fit)
+summary(fit) # we use interaction term because we have lacunes yes microbleeds no
 result = Anova(fit, type = 3) # this is not a balanced study
 print(result)
 ```
 
 ```{r}
-stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
-                          df1 = result$Df[3],
-                          df2 = result$Df[4],
+stats.rep.IVmicrobleeds = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+                          df1 = result$Df[2],
+                          df2 = result$Df[3],
+                          pvalue = formatPval(result$`Pr(>F)`[2]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+stats.rep.IVlacunes = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
+                          df1 = result$Df[2],
+                          df2 = result$Df[3],
                           pvalue = formatPval(result$`Pr(>F)`[3]),
                           MD = NA,
                           lowerCI = NA,
                           upperCI = NA
 )
-
 stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
                           df1 = result$Df[2],
                           df2 = result$Df[4],
@@ -199,11 +207,12 @@ stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
 # Comparing ANCOVA in original study with reanalysis
 ## Independant variable
 ```{r}
-tab.IV = rbind(stats.orig.IV, stats.rep.IV)
-rownames(tab.IV) = c("original Study", "reanalysis")
+tab.IV = rbind(stats.orig.IV, stats.rep.IVmicrobleeds, stats.rep.IVlacunes)
+rownames(tab.IV) = c("original Study", "reanalysis for IV microbleeds presence", "reanalysis for IV lacunes presence")
 print(t(tab.IV))
 ```
 ## Covariate
+* The study does not report results from covariate
 ```{r}
 tab.CV = rbind(stats.orig.CV, stats.rep.CV)
 rownames(tab.CV) = c("original Study", "reanalysis")
@@ -222,14 +231,21 @@ leveneTest(AB38 ~ lac_presence_b, data = data)
 leveneTest(AB38 ~ mb_presence_b, data = data)
 ```
 ## 2.  Independence between covariate and IV
-* The IV of this study have evidence of significant effect to the plasma level AB38.
+* The Independant variable of this study have evidence of significant effect to the covariate. The assumption thus does not hold. 
+* As a way of comparison, we perform a two way anova to assess the main effect of two independant variables (of two levels FALSE and TRUE) and find that there is evidence of significant of influence of Independant variables to Dependant variable.
 ```{r}
-fit.cv = aov(AB38 ~ lac_presence_b + mb_presence_b, data = data) 
-summary(fit.cv)
+fit.cvage = aov(age ~ lac_presence_b + mb_presence_b, data = data) 
+summary(fit.cvage)
+fit.cvsex = glm(sex.factor~ lac_presence_b + mb_presence_b, family = binomial, data = data) 
+summary(fit.cvsex)
+fit.cvhypertension = glm(hypertension ~ lac_presence_b + mb_presence_b, family = binomial, data = data) 
+summary(fit.cvhypertension )
+git <- aov(AB38 ~ mb_presence_b + lac_presence_b, data = data) #checking DV and IV alone
+summary(git)
 ```
 
 ## 3. Homogeneity of regression slopes
-* There is no evidence of significant interaction between covariate and independant variable. Thus we can assume homogeneity of regression slope
+* There is no evidence of significant interaction between covariate and independant variable. Thus we can assume homogeneity of regression slope. 
 ```{r}
 fit.hrs = aov(AB38 ~ age*mb_presence_b, data = data)
 Anova(fit.hrs, type=3) # no evidence of interaction, there is homogeneity of IV levels across age
@@ -242,7 +258,7 @@ Anova(fit.hrs, type=3)
 ```{r fig.height=2, fig.width=3.5}
 ggplot(data, aes(y=AB38, x= age, color= mb_presence_b)) +
   geom_boxplot() +
-  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha = 0.05) +
   geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
@@ -250,7 +266,7 @@ ggplot(data, aes(y=AB38, x= age, color= mb_presence_b)) +
 
 ggplot(data, aes(y=AB38, x= age, color= lac_presence_b)) +
   geom_boxplot() +
-  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha = 0.05) +
   geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
