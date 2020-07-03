@@ -9,7 +9,7 @@ output: pdf_document
 Van Leijsen et al. (2017). Plasma AB (Amyloid-B) Levels and Severity and Progression of Small Vessel Disease. Stroke, 16(5), 351–359. https://doi.org/10.1161/STROKEAHA.117.019810
 
 We first load the appropriate packages
-```{r, eval=TRUE, echo=FALSE, include = FALSE}
+```{r, eval=TRUE, echo=FALSE, include = TRUE}
 #Setting up libraries
 knitr::opts_chunk$set(echo = TRUE)
 library(biostatUZH)
@@ -42,7 +42,14 @@ stats.orig.IV = data.frame(
   lowerCI = NA,
   upperCI = NA)
 
-stats.orig.CV = stats.orig.IV
+stats.orig.allCV =  data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = NA,
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
 ```
 
 # Reading data
@@ -55,8 +62,9 @@ data$mb_presence_b = data$mb_presence_b == 1
 data$lac_presence_b = data$lac_presence_b == 1
 data$sex.factor = NA
 data$sex.factor[data$sex == 1] = "male"
-data$sex[data$sex == 2] = "0"
-data$sex.factor[data$sex == 0] = "female"
+data$sex.factor[data$sex == 2] = "female"
+data$sex.factor[data$sex.factor == "male" ] = 1
+data$sex.factor[data$sex.factor == "female" ] = 0
 data$sex.factor = as.factor(data$sex.factor)
 data$hypertension.factor = NA
 data$hypertension  = data$hypertension == 1 
@@ -148,56 +156,76 @@ ggplot(data,
 
 # Main analysis ANCOVA
 ```{r}
-stats.orig.IV = data.frame(
+stats.orig.IVmicrobleed = data.frame(
   Fvalue =  NA,
   df1 = NA,
   df2 = NA,
-  pvalue = NA,
+  pvalue = "<0.01",
   MD = NA,
   lowerCI = NA,
   upperCI = NA)
 
-stats.orig.CV = stats.orig.IV
+stats.orig.IVlacunes = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = "<0.01",
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
 
-# enter all results from primary study here
-stats.orig.IV$pvalue = 0.01
 ``` 
 
-We verify the p values stated in Table 2 with respect to variables.
-* There is evidence of significance that Age as a covariate contribute to variance in outcome (p = 8.037e-05)
+We verify the p values stated in Table 2 with respect to variables.There is evidence of significance that Age as a covariate contribute to variance in outcome (p = 3.825e-13)
 ```{r}
 # Orthogonal contrasts
 contrasts(data$mb_presence_b) = contr.helmert(2) 
 contrasts(data$lac_presence_b) = contr.helmert(2) 
 
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
-fit <- aov(AB38 ~ mb_presence_b*lac_presence_b + age + sex.factor + hypertension, data = data)
+fit <- aov(AB38 ~ age + sex.factor + hypertension + mb_presence_b*lac_presence_b , data = data)
 summary(fit) # we use interaction term because we have lacunes yes microbleeds no
-result = Anova(fit, type = 3) # this is not a balanced study
+result = Anova(fit, type = 3) # this is not a balanced study, since ordering of variables matter, we use this
 print(result)
 ```
 
 ```{r}
-stats.rep.IVmicrobleeds = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+stats.rep.IVmicrobleeds = data.frame(Fvalue = sprintf("%.2f",result$`F value`[5]),
+                          df1 = result$Df[5],
+                          df2 = result$Df[8],
+                          pvalue = formatPval(result$`Pr(>F)`[5]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+stats.rep.IVlacunes = data.frame(Fvalue = sprintf("%.2f",result$`F value`[6]),
+                          df1 = result$Df[6],
+                          df2 = result$Df[8],
+                          pvalue = formatPval(result$`Pr(>F)`[6]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+stats.rep.CVage = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
                           df1 = result$Df[2],
-                          df2 = result$Df[3],
+                          df2 = result$Df[8],
                           pvalue = formatPval(result$`Pr(>F)`[2]),
                           MD = NA,
                           lowerCI = NA,
                           upperCI = NA
 )
-stats.rep.IVlacunes = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
-                          df1 = result$Df[2],
-                          df2 = result$Df[3],
+stats.rep.CVsex = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
+                          df1 = result$Df[3],
+                          df2 = result$Df[8],
                           pvalue = formatPval(result$`Pr(>F)`[3]),
                           MD = NA,
                           lowerCI = NA,
                           upperCI = NA
 )
-stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
-                          df1 = result$Df[2],
-                          df2 = result$Df[4],
-                          pvalue = formatPval(result$`Pr(>F)`[2]),
+stats.rep.CVhypertension = data.frame(Fvalue = sprintf("%.2f",result$`F value`[4]),
+                          df1 = result$Df[4],
+                          df2 = result$Df[8],
+                          pvalue = formatPval(result$`Pr(>F)`[4]),
                           MD = NA,
                           lowerCI = NA,
                           upperCI = NA
@@ -207,15 +235,15 @@ stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
 # Comparing ANCOVA in original study with reanalysis
 ## Independant variable
 ```{r}
-tab.IV = rbind(stats.orig.IV, stats.rep.IVmicrobleeds, stats.rep.IVlacunes)
-rownames(tab.IV) = c("original Study", "reanalysis for IV microbleeds presence", "reanalysis for IV lacunes presence")
+tab.IV = rbind(stats.orig.IVmicrobleed, stats.orig.IVlacunes, stats.rep.IVmicrobleeds, stats.rep.IVlacunes)
+rownames(tab.IV) = c("original study microbleed", "original Study lacunes", "reanalysis for IV microbleeds presence", "reanalysis for IV lacunes presence")
 print(t(tab.IV))
 ```
 ## Covariate
-* The study does not report results from covariate
+* The study does not report results from covariate of age
 ```{r}
-tab.CV = rbind(stats.orig.CV, stats.rep.CV)
-rownames(tab.CV) = c("original Study", "reanalysis")
+tab.CV = rbind(stats.orig.allCV, stats.rep.CVage, stats.rep.CVsex, stats.rep.CVhypertension)
+rownames(tab.CV) = c("original CV age,sex,hypertension", "reanalysis age", "reanalysis sex", "reanalysis hypertension")
 print(t(tab.CV))
 ```
 # Assumptions
@@ -223,7 +251,7 @@ print(t(tab.CV))
 * ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
 * When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
 * Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
-* In this study, there is homogeneity of variance
+* In this study, statistical descriptives show that the highest and lowest variances seem close. Also, there is homogeneity of variance as p values exceed 0.05 for the Levene's test
 ```{r}
 tapply(data$AB38, data$mb_presence_b, sd)
 tapply(data$AB38, data$lac_presence_b, sd)
@@ -231,17 +259,17 @@ leveneTest(AB38 ~ lac_presence_b, data = data)
 leveneTest(AB38 ~ mb_presence_b, data = data)
 ```
 ## 2.  Independence between covariate and IV
-* The Independant variable of this study have evidence of significant effect to the covariate. The assumption thus does not hold. 
-* As a way of comparison, we perform a two way anova to assess the main effect of two independant variables (of two levels FALSE and TRUE) and find that there is evidence of significant of influence of Independant variables to Dependant variable.
+* The Independant variable of this study have evidence of significant effect to the covariate Age and Hypertension (for Lacune presence only). The assumption thus does not hold.
+* As a way of comparison, we perform a two way anova to assess the main effect of two independant variables without covariates and find that there is evidence of significant of influence of Independant variables to Dependant variable.
 ```{r}
 fit.cvage = aov(age ~ lac_presence_b + mb_presence_b, data = data) 
 summary(fit.cvage)
-fit.cvsex = glm(sex.factor~ lac_presence_b + mb_presence_b, family = binomial, data = data) 
+fit.cvsex = glm(sex.factor ~ lac_presence_b + mb_presence_b, family = binomial, data = data) 
 summary(fit.cvsex)
 fit.cvhypertension = glm(hypertension ~ lac_presence_b + mb_presence_b, family = binomial, data = data) 
 summary(fit.cvhypertension )
-git <- aov(AB38 ~ mb_presence_b + lac_presence_b, data = data) #checking DV and IV alone
-summary(git)
+fit.main <- aov(AB38 ~ mb_presence_b + lac_presence_b, data = data) #checking DV and IV alone
+summary(fit.main)
 ```
 
 ## 3. Homogeneity of regression slopes
@@ -270,6 +298,6 @@ ggplot(data, aes(y=AB38, x= age, color= lac_presence_b)) +
   geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("Age") + ylab("AB38") + ggtitle("Covariate with Lacunes presence")
+  xlab("Age") + ylab("AB38") + ggtitle("Covariate with Lacune presence")
 ```
-
+Reference : Field, Miles & Miles (2012), Discovering Statistics, Published by Sage Pub, UK.
