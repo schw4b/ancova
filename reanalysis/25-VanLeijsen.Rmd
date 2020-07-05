@@ -259,7 +259,7 @@ leveneTest(AB38 ~ lac_presence_b, data = data)
 leveneTest(AB38 ~ mb_presence_b, data = data)
 ```
 ## 2.  Independence between covariate and IV
-* The Independant variable of this study have evidence of significant effect to the covariate Age and Hypertension (for Lacune presence only). The assumption thus does not hold.
+* The Independant variable of this study have evidence of significant effect to the covariate Age and Hypertension (for Lacune presence only). The assumption thus does not hold for Age and for Hypertension for the lacunes group which may influence the interpretation of the results from the ANCOVA analysis. The variable sex is independant to the independant variable and is an appropriate covariate to include. 
 * As a way of comparison, we perform a two way anova to assess the main effect of two independant variables without covariates and find that there is evidence of significant of influence of Independant variables to Dependant variable.
 ```{r}
 fit.cvage = aov(age ~ lac_presence_b + mb_presence_b, data = data) 
@@ -275,10 +275,11 @@ summary(fit.main)
 ## 3. Homogeneity of regression slopes
 * There is no evidence of significant interaction between covariate and independant variable. Thus we can assume homogeneity of regression slope. 
 ```{r}
-fit.hrs = aov(AB38 ~ age*mb_presence_b, data = data)
-Anova(fit.hrs, type=3) # no evidence of interaction, there is homogeneity of IV levels across age
-fit.hrs = aov(AB38 ~ age*lac_presence_b, data = data)
-Anova(fit.hrs, type=3) 
+#alternatively Anova(aov(AB38 ~age*mb_presence_b + age + mb_presence_b, data = data), type = 3)
+fit.hrs_mic = aov(AB38 ~ age*mb_presence_b, data = data)
+Anova(fit.hrs_mic, type=3) # no evidence of interaction, there is homogeneity of IV levels across age
+fit.hrs_lac = aov(AB38 ~ age*lac_presence_b, data = data)
+Anova(fit.hrs_lac, type=3) 
 ```
 
 ## Independance of Covariate with Independant Variables (Visual inspection of Homogeneity of Regression slopes)
