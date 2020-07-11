@@ -37,19 +37,14 @@ stats.orig.IV = data.frame(
   Fvalue =  NA,
   df1 = NA,
   df2 = NA,
-  pvalue = "<0.01", # for microbleed presence and for lacune presence groups
-  MD = NA,
-  lowerCI = NA,
-  upperCI = NA)
+  pvalue = "<0.01") # for microbleed presence and for lacune presence groups
+  
 
 stats.orig.allCV =  data.frame(
   Fvalue =  NA,
   df1 = NA,
   df2 = NA,
-  pvalue = NA,
-  MD = NA,
-  lowerCI = NA,
-  upperCI = NA)
+  pvalue = NA)
 ```
 
 # Reading data
@@ -160,19 +155,13 @@ stats.orig.IVmicrobleed = data.frame(
   Fvalue =  NA,
   df1 = NA,
   df2 = NA,
-  pvalue = "<0.01",
-  MD = NA,
-  lowerCI = NA,
-  upperCI = NA)
+  pvalue = "<0.01")
 
 stats.orig.IVlacunes = data.frame(
   Fvalue =  NA,
   df1 = NA,
   df2 = NA,
-  pvalue = "<0.01",
-  MD = NA,
-  lowerCI = NA,
-  upperCI = NA)
+  pvalue = "<0.01")
 
 ``` 
 
@@ -193,43 +182,27 @@ print(result)
 stats.rep.IVmicrobleeds = data.frame(Fvalue = sprintf("%.2f",result$`F value`[5]),
                           df1 = result$Df[5],
                           df2 = result$Df[8],
-                          pvalue = formatPval(result$`Pr(>F)`[5]),
-                          MD = NA,
-                          lowerCI = NA,
-                          upperCI = NA
-)
+                          pvalue = formatPval(result$`Pr(>F)`[5]))
+
 stats.rep.IVlacunes = data.frame(Fvalue = sprintf("%.2f",result$`F value`[6]),
                           df1 = result$Df[6],
                           df2 = result$Df[8],
-                          pvalue = formatPval(result$`Pr(>F)`[6]),
-                          MD = NA,
-                          lowerCI = NA,
-                          upperCI = NA
-)
+                          pvalue = formatPval(result$`Pr(>F)`[6]))
+
 stats.rep.CVage = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
                           df1 = result$Df[2],
                           df2 = result$Df[8],
-                          pvalue = formatPval(result$`Pr(>F)`[2]),
-                          MD = NA,
-                          lowerCI = NA,
-                          upperCI = NA
-)
+                          pvalue = formatPval(result$`Pr(>F)`[2]))
+
 stats.rep.CVsex = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
                           df1 = result$Df[3],
                           df2 = result$Df[8],
-                          pvalue = formatPval(result$`Pr(>F)`[3]),
-                          MD = NA,
-                          lowerCI = NA,
-                          upperCI = NA
-)
+                          pvalue = formatPval(result$`Pr(>F)`[3]))
+
 stats.rep.CVhypertension = data.frame(Fvalue = sprintf("%.2f",result$`F value`[4]),
                           df1 = result$Df[4],
                           df2 = result$Df[8],
-                          pvalue = formatPval(result$`Pr(>F)`[4]),
-                          MD = NA,
-                          lowerCI = NA,
-                          upperCI = NA
-)
+                          pvalue = formatPval(result$`Pr(>F)`[4]))
 ```
 
 # Comparing ANCOVA in original study with reanalysis

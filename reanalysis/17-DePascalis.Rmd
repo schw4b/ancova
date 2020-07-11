@@ -26,32 +26,35 @@ library(effects)# for effect command
 library(ggplot2)
 library(beeswarm)
 library(tidyr)
+library(tidyverse)
+library(ggpubr)
+library(rstatix)
 ```
 
 #Paper's results section
 
-The outcome of interest in the ANCOVA is "N1/P2 complex"
-The independant variables are Emotion (3 levels), Auditory Intensity (five levels), Recording side (three levels) and a Covariate.
+* DV: "N1/P2 complex" (n = 39)
+* IV: 
+ * Emotion (3 levels), 
+ * Auditory Intensity (five levels), 
+ * Recording side (three levels) (n = 39)
+* COV: RST (n = 39)
 
 ```{r, eval=TRUE, echo=FALSE, include = FALSE}
-
 # A similar ANCOVA performed on the N1/P2 slope scores found a highly significant main effect for the BIS, F1,37=13.12, p=0.0009, η2=0.35, indicating lower slopes for high-BIS individuals compared to low-BIS participants (Fig. 2c).
-
-Fvalue =  13.12
-df1 = 1
-df2 = 37
-pvalue = 0.0009
-estimates = as.data.frame(cbind(F, df1, df2, pvalue))
-rownames(estimates) = c("Study")
-estimates
+stats.orig.IV = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = "") # for 
+  
+stats.orig.allCV =  data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = NA)
 ```
 
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
-level1 = 3
-level2 = 5
-level3 = 3
-combo <- level1*level2*level3 # possible number of DV based on counts of IV and each of their levels, = 45
-```
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
@@ -76,7 +79,6 @@ ElectrodeIV <- as.data.frame(c(rep("ElectrodeOne", 585), rep("ElectrodeTwo", 585
 colnames(ElectrodeIV) <- "ElectrodeIV"
 dim(ElectrodeIV)
 
-
 COV <- as.data.frame(rep(data$RST_BIS[1:39], 45))
 colnames(COV) <- "COV"
 dim(COV)
@@ -89,35 +91,72 @@ names(data)
 names(DV00)
 names(DV0)
 boom <- cbind(DV0, COV, IntensityIV, EmotionIV, ElectrodeIV)
-View(boom)
 data <- boom
-names(data)
-View(data)
-head()
+
+# order levels within IVs only with Intensity 
+data$IntensityIV <- factor(data$IntensityIV, levels = c("One", "Two", "Three", "Four", "Five"), ordered = TRUE)
+# data$EmotionIV <- factor(data$EmotionIV, levels = c("Neutral", "Negative", "Positive"), ordered = TRUE)
+# data$ElectrodeIV <- factor(data$ElectrodeIV, levels = c("ElectrodeOne", "ElectrodeTwo", "ElectrodeThree"), ordered = TRUE)
+
 ```
 Running an initial ANCOVA
+
+# Descriptives 
+Number of samples and mean (SD) in levels of the independant variables. We reproduce the mean and sd values of Table 2 of this study
+```{r}
+a = sprintf("%.1f (%.1f)", mean(data$DV[data$EmotionIV == "Neutral"]), sd(data$DV[data$EmotionIV == "Neutral"]))
+b = sprintf("%.1f (%.1f)", mean(data$DV[data$EmotionIV == "Positive"]), sd(data$DV[data$EmotionIV == "Positive"]))
+c = sprintf("%.1f (%.1f)", mean(data$DV[data$EmotionIV == "Negative"]), sd(data$DV[data$EmotionIV == "Negative"]))
+d = sprintf("%.1f (%.1f)", mean(data$DV[data$IntensityIV == "One"]), sd(data$DV[data$IntensityIV == "One"]))
+e = sprintf("%.1f (%.1f)", mean(data$DV[data$IntensityIV == "Two"]), sd(data$DV[data$IntensityIV == "Two"]))
+f = sprintf("%.1f (%.1f)", mean(data$DV[data$IntensityIV == "Three"]), sd(data$DV[data$IntensityIV == "Three"]))
+g = sprintf("%.1f (%.1f)", mean(data$DV[data$IntensityIV == "Four"]), sd(data$DV[data$IntensityIV == "Four"]))
+h = sprintf("%.1f (%.1f)", mean(data$DV[data$IntensityIV == "Five"]), sd(data$DV[data$IntensityIV == "Five"]))
+i = sprintf("%.1f (%.1f)", mean(data$DV[data$ElectrodeIV == "ElectrodeOne"]), sd(data$DV[data$ElectrodeIV == "ElectrodeOne"]))
+j = sprintf("%.1f (%.1f)", mean(data$DV[data$ElectrodeIV == "ElectrodeTwo"]), sd(data$DV[data$ElectrodeIV == "ElectrodeTwo"]))
+k = sprintf("%.1f (%.1f)", mean(data$DV[data$ElectrodeIV == "ElectrodeThree"]), sd(data$DV[data$ElectrodeIV == "ElectrodeThree"]))
+
+idx = c(1, 3, 2, 4) # sorting as in publication
+tab.dv = array(NA, dim=c(11,3))
+tab.dv
+tab.dv[,1] = c("IntensityIV neutral", "EmotionIV", "ElectrodeIV", "IntensityIV", "EmotionIV", "ElectrodeIV", "IntensityIV", "EmotionIV", "ElectrodeIV", "IntensityIV", "EmotionIV")
+tab.dv[,2] = c("39", "39", "39", "39", "39", "39", "39", "39", "39", "39", "39")
+tab.dv[,3] = c(a, b, c, d, e, f, g, h, i, j, k)
+colnames(tab.dv) = c("group", "n", "mean (SD)")
+print(tab.dv)
+
+# data %>%
+#   group_by(IntensityIV, EmotionIV, ElectrodeIV) %>%
+#   get_summary_stats(DV, type = "mean_sd")
+```
 
 # Interpreting the main effects of ANCOVA
 Main effects of ANCOVA
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
 #contrasts(data$IV)<-cbind(c(-2,1,1), c(0,-1,1))
-ancovaModel<-aov(DV ~ COV + EmotionIV*IntensityIV*ElectrodeIV,  data = data) # there is evidence of significance that COV impacts on DV, residuals is less than the belowmodel
+contrasts(boom$IntensityIV) <-contr.helmert(5)
+contrasts(boom$EmotionIV) <-contr.helmert(3)
+contrasts(boom$Electrode) <-contr.helmert(3)
+#repeated measures using aov() command
+ancovaModel<-aov(
+  DV ~ COV + EmotionIV*IntensityIV*ElectrodeIV + Error(Oss/(EmotionIV*IntensityIV*ElectrodeIV)),  data = data)
+              #https://personality-project.org/r/r.guide/r.anova.html   
 summary(ancovaModel)
-Anova(ancovaModel, type = "3")
-Error(Subject/(EmotionIV*IntensityIV*ElectrodeIV))
-ancovaModel<-aov(DV ~ COV + EmotionIV, data = data) # there is evidence of significance that COV impacts on DV, larger residuals than above model
+summary(Anova(ancovaModel, idata=intra, idesign=~EmotionIV*IntensityIV*ElectrodeIV, multivariate=FALSE, univariate=TRUE))
 
-lm_ancova <- lm(DV ~ COV + EmotionIV + IntensityIV + ElectrodeIV + (1|data$Oss), data = data)
-summary(lm_ancova)
-Anova(lm_ancova, type="III")
+fit = aggregate(DV ~ COV +  EmotionIV*IntensityIV*ElectrodeIV, data = data, mean)
+aov(DV~COV + EmotionIV*IntensityIV*ElectrodeIV + Error(Oss/(EmotionIV*IntensityIV*ElectrodeIV, fit)))
 
-Fvalue =  13.12
-df1 = 1
-df2 = 37
-pvalue = 0.0009
-estimates = as.data.frame(cbind(F, df1, df2, pvalue))
-rownames(estimates) = c("Study")
-estimates
+
+
+
+# Fvalue =  13.12
+# df1 = 1
+# df2 = 37
+# pvalue = 0.0009
+# estimates = as.data.frame(cbind(F, df1, df2, pvalue))
+# rownames(estimates) = c("Study")
+# estimates
 ```
 <p align="left">
   <b> Definitions </b>
@@ -134,163 +173,110 @@ Checking Assumptions
 
 ## Motivation
 
-<b>  </b> 
-<p align="left">
-- Initial one-way ANOVA show that there is no evidence of significant relationship between dose and libido, motivates to evaluate its underlying covariances to answer :
-- What is the variance explained by three doses of Viagra on Libido?
-- And what is the variance explained by Partner Libido on Libido. 
-</p>
+
 ```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-mod1 <- aov(DV ~ EmotionIV, data = data)
-mod2 <- aov(DV ~ IntensityIV, data = data)
-mod3 <- aov(DV ~ ElectrodeIV, data = data)
-c(summary(mod1$fitted.values,summary(mod2$coefficients),summary(mod3$coefficients))
 
-mod1$coefficients
+stats.rep.EmotionIV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[5]),
+                          df1 = result$Df[5],
+                          df2 = result$Df[8],
+                          pvalue = formatPval(result$`Pr(>F)`[5]))
 
-```
-## Explore Data
-<p align="left">
-- Boxplot shows: Does different doses produce different outcomes
-</p>
-```{r, echo= TRUE, include = TRUE, eval = TRUE, tidy = TRUE}
-#IV : Emotion
-par(mfrow=c(1,2))
-beeswarm(DV~EmotionIV, data= data, main = "Emotion vs Outcome", pch = 16, col = rainbow(8))
-boxplot(DV~EmotionIV, data= data, outline = FALSE, main = " ", add= TRUE) 
-par(mfrow=c(1,2))
-beeswarm(COV~EmotionIV, data= data, pch = 16, col = rainbow(8), main = "Emotion vs Covariate")
-boxplot(COV ~ EmotionIV, data = data, outline = FALSE, main = " ", add = TRUE) 
+stats.rep.ElectrodeIv = data.frame(Fvalue = sprintf("%.2f",result$`F value`[6]),
+                          df1 = result$Df[6],
+                          df2 = result$Df[8],
+                          pvalue = formatPval(result$`Pr(>F)`[6]))
 
-#IV : Intensity
-par(mfrow=c(1,2))
-beeswarm(DV~IntensityIV, data= data, main = "Emotion vs Outcome", pch = 16, col = rainbow(8))
-boxplot(DV~IntensityIV, data= data, outline = FALSE, main = " ", add= TRUE) 
-par(mfrow=c(1,2))
-beeswarm(COV~IntensityIV, data= data, pch = 16, col = rainbow(8), main = "Emotion vs Covariate")
-boxplot(COV ~ IntensityIV, data = data, outline = FALSE, main = " ", add = TRUE) 
-#IV : Electrode
-par(mfrow=c(1,2))
-beeswarm(DV~ElectrodeIV, data= data, main = "Emotion vs Outcome", pch = 16, col = rainbow(8))
-boxplot(DV~ElectrodeIV, data= data, outline = FALSE, main = " ", add= TRUE) 
-par(mfrow=c(1,2))
-beeswarm(COV~ElectrodeIV, data= data, pch = 16, col = rainbow(8), main = "Emotion vs Covariate")
-boxplot(COV ~ ElectrodeIV, data = data, outline = FALSE, main = " ", add = TRUE) 
-```
-## Explore Data : Descriptives
-<p align="left">
-- Descriptive Statistics
-</p>
-```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-by(data$DV, data$EmotionIV, stat.desc)
-by(data$DV, data$EmotionIV, stat.desc)
+stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+                          df1 = result$Df[2],
+                          df2 = result$Df[8],
+                          pvalue = formatPval(result$`Pr(>F)`[2]))
+
+
+stats.rep.IntensityIV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[4]),
+                          df1 = result$Df[4],
+                          df2 = result$Df[8],
+                          pvalue = formatPval(result$`Pr(>F)`[4]))
 ```
 
-## Explore Data : Graphical analysis for homogeneity of regression slopes
-<p align="left">
-- Say we want to know the overall relationship between Viagra and Partner libido, ignoring which dose groups the data points belong to, we therefore assume that the relationship between dose group and partner libido is constant across all doses. If the latter is not true, then the overall relationship between Viagra and Partner libido is inaccurate.
-- there is homogeneity of regression slopes for Placebo and Lower doses
-- there is no homogeneity of regression slopes for Placebo and High dose
-- That's ok because there are situations where you might actually expect regression slopes to differ across groups and that this is, in itself, an interesting hypothesis. 
-</p>
 
-## Graphical Anaylsis for homogeneity of regression slopes
-
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
-
-data %>% ggplot() +
-+   geom_jitter(aes(COV, DV, colour = factor(EmotionIV))) +
-+   geom_smooth(method = lm)
-
-ggplot(data, aes(y = DV, x = EmotionIV, group = factor(EmotionIV), colour = factor(EmotionIV))) +  geom_jitter(aes(colour = factor(EmotionIV))) + geom_smooth(method = lm)
-```
-
-## Assumption 1 : Homogeneity of variance
-<p align="left">
-- Levene's Test: Are the variances between levels on outcome very similar ?
-- A good double-check of Levene’s test is to look at the highest and lowest variances. For our levels we have standard deviations of .
-</p>
-```{r, include = TRUE, echo = TRUE, eval = TRUE, tidy = TRUE}
-leveneTest(data$DV, data$EmotionIV, center = median)
-leveneTest(data$DV, data$IntensityIV, center = median)
-leveneTest(data$DV, data$ElectrodeIV, center = median)
-```
-## Assumption 2 : Check that the covariate and any independent variables are independent
-
-<p align="left">
-- We run an ANOVA to find out if the covariance independant to each of the IV levels? 
-- The summary results show that on different levels for each IV, there is no evidence of significant association to N1/P2 complex.
-</p>
-```{r, eval = TRUE, echo = TRUE}
-checkIndependenceModel1<-aov(COV ~ EmotionIV, data = data) 
-checkIndependenceModel2<-aov(COV ~ IntensityIV, data = data)
-checkIndependenceModel3<-aov(COV ~ ElectrodeIV, data = data)
-summary(checkIndependenceModel1)
-summary(checkIndependenceModel2)
-summary(checkIndependenceModel3)
-```
-## Residuals vs Fitted : Testing for Homogeneity of Variance
-<p align="left">
-- The residuals for fitted value are similar to zero, assumption for homogeneity of variance held.
-</p>
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy= TRUE, fig.width = 6, fig.height = 5}
-plot(ancovaModel, which = 1)
-```
-## QQ plots
-<p align="left">
-- Residuals are normally distributed
-</p>
-```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy =TRUE, fig.width = 4, fig.height = 5}
-plot(ancovaModel, which = 2)
-```
-## Post Hoc Tests 
-<p align="left">
-- A Tukey-Ascombe test is performed via a general linear hypotheses function from library(multcomp).
-- It is used for a pairwise comparison t test between doses for between groups differences
-- In other words: we want to test differences between the adjusted means.
-- In this case, the differences between IV levels can be compared with evidence of significance.
-- In this method, we are restricted to the Tukey and the Dunnett method.
-</p>
-```{r, include = TRUE, echo = TRUE, eval = TRUE}
-postHocs<-glht(ancovaModel, linfct = mcp(ElectrodeIV = "Tukey"))
-summary(postHocs)
-confint(postHocs)
-```
-## Going back to Basic Assumptions : Homogeneity of Regression Slopes
-<p align="left">
-There is a positive relationship between all IV and Covariate.
-</p>
-```{r, include = TRUE, echo = TRUE, eval = TRUE}
-#IVA <- c(EmotionIV, IntensityIV, ElectrodeIV)
-# IVA[1]
-# for (i in 1:3){assign(paste0("hoRs",i, aov(DV ~ COV*IV[i], data = data)))} 
-
-hoRS1<-aov(DV ~ COV*EmotionIV, data = data)
-hoRS2<-aov(DV ~ COV*IntensityIV, data = data)
-hoRS2<-aov(DV ~ COV*ElectrodeIV, data = data)
-
-hoRS1<-update(ancovaModel, .~. + COV:EmotionIV)
-hoRS2<-update(ancovaModel, .~. + COV:IntensityIV)
-hoR3S<-update(ancovaModel, .~. + COV:ElectrodeIV)
-
-summary(hoRS1) 
-summary(hoRS2)
-summary(hoR3S)
-
-df01 <- Anova(hoRS1, type="III")
-df02 <- Anova(hoRS1, type="III")
-df03 <- Anova(hoRS1, type="III")
-
-df <- as.data.frame(c(df01[3, 3:4],df02[3, 3:4],df03[3, 3:4]))
-```
-
-## Creating a data frame 
-<p align="left">
-- 
-</p>
+# Comparing ANCOVA in original study with reanalysis
+## Independant variable
 ```{r}
-reanalysis = cbind(FvalueR, df1R, df2R, pvalueR)
-rownames(reanalysis) = c("Reanalysis")
-estimates = rbind(estimates, reanalysis)
+tab.IV = rbind(stats.orig.EmotionIV, stats.orig.ElectrodeIV, stats.orig.IntensityIV, stats.rep.EmotionIV, stats.rep.IntensityIV, stats.rep.IntensityIV)
+rownames(tab.IV) = c("original study Emotion IV", "original study Electrode IV",  "original study Intensity IV", "reanalysis for Emotion IV", "reanalysis for Intensity IV",  "reanalysis study Intensity IV")
+print(t(tab.IV))
 ```
 
+## Covariate
+* The study does not report results from covariate of age
+```{r}
+tab.CV = rbind(stats.orig.allCV, stats.rep.CVage, stats.rep.CVsex, stats.rep.CVhypertension)
+rownames(tab.CV) = c("original CV age,sex,hypertension", "reanalysis age", "reanalysis sex", "reanalysis hypertension")
+print(t(tab.CV))
+```
+
+
+# Assumptions
+## 1.  Homogeneity of variance
+* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
+* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
+* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
+* In this study, statistical descriptives show that the highest and lowest variances seem close. Also, there is homogeneity of variance as p values exceed 0.05 for the Levene's test
+```{r}
+tapply(data$DV, data$EmotionIV, sd)
+tapply(data$DV, data$ElectrodeIV, sd)
+tapply(data$DV, data$IntensityIV, sd)
+leveneTest(DV ~ EmotionIV, data = data) 
+leveneTest(DV ~ ElectrodeIV, data = data)
+leveneTest(DV ~ IntensityIV, data = data)
+```
+
+## 2.  Independence between covariate and IV
+
+```{r}
+fit.cv = aov(COV ~ EmotionIV + IntensityIV + ElectrodeIV, data = data) 
+summary(fit.cv) 
+```
+## 3. Homogeneity of regression slopes
+* There is no evidence of significant interaction between covariate and independant variable. Thus we can assume homogeneity of regression slope. 
+```{r}
+#alternatively Anova(aov(AB38 ~age*mb_presence_b + age + mb_presence_b, data = data), type = 3)
+fit.hrs_Emotion = aov(DV ~ COV*EmotionIV, data = data)
+Anova(fit.hrs_Emotion, type=3) # no evidence of interaction, there is homogeneity of IV levels across age
+fit.hrs_Intensity = aov(DV ~ COV*IntensityIV, data = data)
+Anova(fit.hrs_Intensity, type=3) 
+fit.hrs_Electrode = aov(DV ~ COV*ElectrodeIV, data = data)
+Anova(fit.hrs_Electrode, type=3) 
+```
+  
+  
+## Independance of Covariate with Independant Variables (Visual inspection of Homogeneity of Regression slopes)
+* Visually, the two levels of each independant variable follows the same pattern - there seems to be independance of Covariate versus independant variable.
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=DV, x= COV, group = ElectrodeIV, color = ElectrodeIV)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha = 0.05) +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("COV") + ylab("DV") + ggtitle("Covariate with Electrode location")
+
+ggplot(data, aes(y=DV, x= COV, color= EmotionIV)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha = 0.05) +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("COV") + ylab("DV") + ggtitle("Covariate with Emotion type")
+
+ggplot(data, aes(y=DV, x= COV, color= IntensityIV)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha = 0.05) +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("COV") + ylab("DV") + ggtitle("Covariate with Intensity type")
+  
+```  
+  
+Reference : Field, Miles & Miles (2012), Discovering Statistics, Published by Sage Pub, UK.
