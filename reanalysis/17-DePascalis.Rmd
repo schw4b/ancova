@@ -93,10 +93,10 @@ names(DV0)
 boom <- cbind(DV0, COV, IntensityIV, EmotionIV, ElectrodeIV)
 data <- boom
 
-# order levels within IVs only with Intensity 
+# factor and order
 data$IntensityIV <- factor(data$IntensityIV, levels = c("One", "Two", "Three", "Four", "Five"), ordered = TRUE)
-# data$EmotionIV <- factor(data$EmotionIV, levels = c("Neutral", "Negative", "Positive"), ordered = TRUE)
-# data$ElectrodeIV <- factor(data$ElectrodeIV, levels = c("ElectrodeOne", "ElectrodeTwo", "ElectrodeThree"), ordered = TRUE)
+data$EmotionIV <- factor(data$EmotionIV)
+data$ElectrodeIV <- factor(data$ElectrodeIV)
 
 ```
 Running an initial ANCOVA
@@ -119,15 +119,11 @@ k = sprintf("%.1f (%.1f)", mean(data$DV[data$ElectrodeIV == "ElectrodeThree"]), 
 idx = c(1, 3, 2, 4) # sorting as in publication
 tab.dv = array(NA, dim=c(11,3))
 tab.dv
-tab.dv[,1] = c("IntensityIV neutral", "EmotionIV", "ElectrodeIV", "IntensityIV", "EmotionIV", "ElectrodeIV", "IntensityIV", "EmotionIV", "ElectrodeIV", "IntensityIV", "EmotionIV")
+tab.dv[,1] = c("Emotion neutral ", "Emotion negative", "Emotion positive", "Intensity One", "Intensity Two", "Intensity Three", "Intensity Four", "Intensity Five", "Electrode One", "Electrode Two", "Electrode Three")
 tab.dv[,2] = c("39", "39", "39", "39", "39", "39", "39", "39", "39", "39", "39")
 tab.dv[,3] = c(a, b, c, d, e, f, g, h, i, j, k)
 colnames(tab.dv) = c("group", "n", "mean (SD)")
 print(tab.dv)
-
-# data %>%
-#   group_by(IntensityIV, EmotionIV, ElectrodeIV) %>%
-#   get_summary_stats(DV, type = "mean_sd")
 ```
 
 # Interpreting the main effects of ANCOVA
@@ -146,9 +142,6 @@ summary(Anova(ancovaModel, idata=intra, idesign=~EmotionIV*IntensityIV*Electrode
 
 fit = aggregate(DV ~ COV +  EmotionIV*IntensityIV*ElectrodeIV, data = data, mean)
 aov(DV~COV + EmotionIV*IntensityIV*ElectrodeIV + Error(Oss/(EmotionIV*IntensityIV*ElectrodeIV, fit)))
-
-
-
 
 # Fvalue =  13.12
 # df1 = 1
