@@ -138,7 +138,7 @@ ancovaModel<-aov(
   DV ~ COV + EmotionIV*IntensityIV*ElectrodeIV + Error(Oss/(EmotionIV*IntensityIV*ElectrodeIV)),  data = data)
               #https://personality-project.org/r/r.guide/r.anova.html   
 summary(ancovaModel)
-summary(Anova(ancovaModel, idata=intra, idesign=~EmotionIV*IntensityIV*ElectrodeIV, multivariate=FALSE, univariate=TRUE))
+summary(Anova(ancovaModel, idata=intra, idesign=~EmotionIV*IntensityIV*ElectrodeIV, multivariate=TRUE, univariate= FALSE))
 
 fit = aggregate(DV ~ COV +  EmotionIV*IntensityIV*ElectrodeIV, data = data, mean)
 aov(DV~COV + EmotionIV*IntensityIV*ElectrodeIV + Error(Oss/(EmotionIV*IntensityIV*ElectrodeIV, fit)))
