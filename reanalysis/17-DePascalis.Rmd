@@ -1,8 +1,8 @@
 ---
 title: "17-DePascalis"
 author: "Simon Schwab, Audrey Yeo"
-date: "11/13/2019"
-output: html_document
+date: "17/07/2019"
+output: pdf_document
 ---
 
 # Reference
@@ -15,7 +15,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(readxl)
 library(foreign)
 library(readxl)
-library(readstata13)
 library(car) # for levene's test
 library(effects)# for adjusted means
 library(ggplot2) # for graphs
@@ -58,7 +57,7 @@ stats.orig.allCV =  data.frame(
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
-data = read_excel("../results/data/17-DePascalis/BIS_cov_N1-P2peak_amplitude_r.xlsx", skip = 4)
+data = read_excel("../results/data/17-DePascalis/17-DePascalis-1.xlsx", skip = 4)
 names(data)
 dim(data)
 # correcting typo
@@ -138,6 +137,7 @@ ancovaModel<-aov(
   DV ~ COV + EmotionIV*IntensityIV*ElectrodeIV + Error(Oss/(EmotionIV*IntensityIV*ElectrodeIV)),  data = data)
               #https://personality-project.org/r/r.guide/r.anova.html   
 summary(ancovaModel)
+
 summary(Anova(ancovaModel, idata=intra, idesign=~EmotionIV*IntensityIV*ElectrodeIV, multivariate=TRUE, univariate= FALSE))
 
 fit = aggregate(DV ~ COV +  EmotionIV*IntensityIV*ElectrodeIV, data = data, mean)
