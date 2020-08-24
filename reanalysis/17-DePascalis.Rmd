@@ -57,7 +57,7 @@ stats.orig.allCV =  data.frame(
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r, include = TRUE, echo = FALSE, eval = TRUE, tidy = TRUE}
-data = read_excel("../results/data/17-DePascalis/17-DePascalis-1.xlsx", skip = 4)
+data = read_excel("../dataPrimaryStudies/17-DePascalis/17-DePascalis-1.xlsx", skip = 4)
 names(data)
 dim(data)
 # correcting typo
@@ -84,7 +84,7 @@ dim(COV)
 names(data)
 
 # DV <- c(data[1:40,3], data[1:39,4], data[1:39,5], data[1:39,6], data[1:39,7], data[1:39,8], data[1:39,9], data[1:39, 10], data[1:39, 11], data[1:39, 12], data[1:39, 13], data[1:39, 14])
-DV00 <- gather(data, "DVcat", "DV", -Subject, -Oss, -RST_BIS, -`...48`) 
+DV00 <- gather(data, "DVcat", "DV", -Subect, -Oss, -RST_BIS, -`...48`) 
 DV0 <- as.data.frame(DV00[,-c(3:5)]) # we dont need this
 names(data)
 names(DV00)
