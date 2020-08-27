@@ -196,9 +196,9 @@ ggplot(data, aes(y=pain_mea_30, x=pain_mea_bas, color=tratt, shape=tratt)) +
 
 # Notes
 
-* Non-inferiority intervention study, ANVOVA is used to calculate adjusted means for the two groups (corrected for baseline pain)
+* Non-inferiority intervention study, ANCOVA is used to calculate adjusted means for the two groups (corrected for baseline pain)
 * Main finding partly reproduced, lower bound of the 95%-CI was wrong, probably a typo.
 * Our analysis was consistent with SAS output from authors
-* One assumptions not met, baseline pain (CV) not independent from treatment groups (IV)
+* All assumptions met
 
 Data was analyzed according to recommendations by Field, Miles, & Field (2012).
