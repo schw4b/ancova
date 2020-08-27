@@ -21,7 +21,7 @@ library(testit)
 temp <- read.csv("sample_screened.csv", header = TRUE, stringsAsFactors = FALSE)
 contactlist <- data.frame(temp)
 contactlist <- contactlist[contactlist$Included == "Yes" & 
-                             contactlist$Data.sharing.3w..no..yes. == "no",]
+                             contactlist$Data.sharing..no..no.reply..yes..wait. == "no replay",]
 ```
 
 
@@ -30,7 +30,7 @@ body <- c("Dear Dr %s
 Dear Dr. %s  
 Dear Co-authors \n\n
 
-We'd like to get back to you to kindly request data from one of your recent publications.\n\n
+We'd like to get back to you to kindly request data from one of your recent publications. Please also reply if you do not want to share your data. \n\n
 
 We are researchers at the Centre for Reproducible Science (CRS) at University of Zurich, Switzerland. We are interested in re-analyzing studies using Analysis of Covariance (ANCOVA) published in highly ranked journals and in the fields of medicine, multidisciplinary science, neuroscience and psychiatry. We want to explore how many studies share data when requested and if we are able to reanalyze results from ANCOVA. Our study has been registered and the protocol is available here: [https://osf.io/tjngz/](https://osf.io/tjngz/).\n\n
 
@@ -55,7 +55,7 @@ Phone: +41 76 593 1103 | [simon.schwab@uzh.ch](mailto:simon.schwab@uzh.ch)
 
 body_single <- c("Dear Dr %s\n\n
 
-We'd like to get back to you to kindly request data from one of your recent publications.\n\n
+We'd like to get back to you to kindly request data from one of your recent publications. Please also reply if you do not want to share your data.\n\n
 
 We are researchers at the Centre for Reproducible Science (CRS) at University of Zurich, Switzerland. We are interested in re-analyzing studies using Analysis of Covariance (ANCOVA) published in highly ranked journals and in the fields of medicine, multidisciplinary science, neuroscience and psychiatry. We want to explore how many studies share data when requested and if we are able to reanalyze results from ANCOVA. Our study has been registered and the protocol is available here: [https://osf.io/tjngz/](https://osf.io/tjngz/).\n\n
 
@@ -130,11 +130,11 @@ attach_connect_email(email = emails[[6]])
 
 # Send out mails
 ```{r, eval=FALSE}
-i=28
+i=1
 
 smtp_send(
   email =  emails[[i]],
-  subject = paste0("Follow-up request to share data (study no. ", contactlist$No[i], ")"),
+  subject = paste0("2nd follow-up request to share data (study no. ", contactlist$Study.No[i], ")"),
   from = c("Simon Schwab" = "simon.schwab@uzh.ch"),
   to = strsplit(contactlist$Email..first.last.corresponding.[i], split = ";")[[1]],
   cc = c("simon.schwab@uzh.ch","audrey.yeo@uzh.ch"),

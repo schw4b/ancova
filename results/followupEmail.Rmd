@@ -1,5 +1,5 @@
 ---
-title: "FollowupEmail14days"
+title: "Followup Email"
 author : "Simon Schwab, Audrey Yeo"
 ---
 
@@ -7,7 +7,6 @@ author : "Simon Schwab, Audrey Yeo"
 library(knitr)
 library(rmarkdown)
 library(blastula)
-library(readxl)
 library(testit)
 ```
 
