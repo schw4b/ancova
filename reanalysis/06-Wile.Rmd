@@ -1,8 +1,9 @@
 ---
 title: "Reanalysis of 06-Wile"
-author: "Simon Schwab"
+author: "Simon Schwab^[University of Zurich, simon.schwab@uzh.ch]"
 date: "01/06/2020"
 output: pdf_document
+toc: true
 ---
 
 # Reference
@@ -105,7 +106,7 @@ stats.orig.IV = data.frame(
 stats.orig.CV = stats.orig.IV
 
 # enter all results from primary study here
-stats.orig.IV$pvalue = 0.026 
+stats.orig.IV$pvalue = "n.s." 
 ```
 
 
@@ -198,5 +199,13 @@ fit = manova(cbind(Cortex, Striatum, Brainstem, Hypothalamus) ~ Group.factor + `
              data=data)
 summary(fit)
 ```
+
+# Notes
+
+* The first reported ANCOVA which was n.s. was reproduced
+* p-value was not reported
+* Authors also report age unadjusted analyses and report these as ANCOVAs instead of ANOVAs (p. 357) which was confusing
+* Assumptions were met, except homogeneity of regression slopes showing a different relationship of outcome and covariate in the LRRK2 premanifest group
+* Many analyses, they corrected for multiplicity
 
 Data was analyzed according to recommendations by Field, Miles, & Field (2012).
