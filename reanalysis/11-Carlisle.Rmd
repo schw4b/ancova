@@ -179,7 +179,6 @@ Anova(fit.cv, type=3)
 
 ## 3. Homogeneity of regression slopes
 * We test the interaction between the IV and the CV
-* The assumption is not met in this paper, however, the authors' goal was exactly to investigate the different slopes across species (Table 2).
 ```{r}
 fit.hrs = aov(log(Olfactory_Bulb) ~ log(Whole_Brain_Volume-Olfactory_Bulb)*Species.name, data = data)
 Anova(fit.hrs, type=3)
@@ -211,7 +210,7 @@ summary(fit)
 # Notes
 
 * First main result reproduced
-* Assumptions hold. Homogenity of regression slopes was part of the research questions.
+* Assumptions hold. Homogenity of regression slopes was part of the research questions (Table 2).
 * ANCOVA used with interactions term for species and whole brain volume, not to regress covariate
 * Log transform of IV and CV was successful
 * Lots of models tested, no correction for multiplicity
