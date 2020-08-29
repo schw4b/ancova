@@ -172,7 +172,7 @@ When the covariate and the experimental effect (independent variable) are not in
 We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
 ```{r}
 fit.cv = aov(`Age at PET` ~ Group.factor, data = data) 
-summary(fit.cv)
+Anova(fit.cv, type=3)
 ```
 
 
