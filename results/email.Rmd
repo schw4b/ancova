@@ -154,4 +154,3 @@ smtp_send(
 #https://docs.rstudio.com/connect/1.6.6/user/r-markdown.html#r-markdown-email-body
 #https://github.com/rich-iannone/blastula
 ```
-
