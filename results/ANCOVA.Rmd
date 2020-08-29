@@ -1,0 +1,131 @@
+---
+title: "ANCOVA"
+author: "Simon Schwab"
+date: "27/08/2020"
+output: pdf_document
+toc: true
+---
+
+```{r}
+library(ggplot2)
+library(cowplot)
+
+PATH_FIGURES = file.path(path.expand("~"), "Data", "ancova", "results")
+COLORS4 = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a")
+```
+
+
+# Load data
+```{r}
+data = read.csv("Studies reanalyzed.csv", header = TRUE, stringsAsFactors = FALSE)
+data = data.frame(data)
+data = subset(data, subset = data$Included == "Yes")
+
+data$category = as.factor(data$category)
+data$dataSharing = as.factor(data$Data.sharing..no..no.reply..yes..wait.)
+```
+
+# show some data
+```{r}
+data[, c("Study.No", "DOI", "JournalTitle", "Rank.percentile", "category")]
+```
+
+# Data sharing
+```{r fig.height=4, fig.width=4}
+tab = data.frame(cat = names(summary(data$dataSharing)),
+                 val = summary(data$dataSharing)
+)
+tab$prc = summary(data$dataSharing)/nrow(data)
+rownames(tab) = 1:4
+tab$cat = factor(tab$cat, levels = rev(c("yes", "no", "wait", "no reply")))
+
+nr  = tab$val[match(levels(tab$cat), tab$cat)]
+percent = tab$prc[match(levels(tab$cat), tab$cat)]
+
+p1 = ggplot(tab, aes(x="", y=val, fill=cat)) +
+  geom_bar(width = 1, stat = "identity", color = "white") +
+  coord_polar("y", start=0) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid=element_blank(),
+    axis.ticks = element_blank(),
+    panel.border = element_blank(),
+    axis.text.x=element_blank(),
+    legend.title = element_blank()
+    ) +
+  scale_fill_manual(values=rev(c(COLORS4[c(1,4)],"gray60", "gray30")),
+                    labels = rev(c("yes", "no (refused)", "waiting for transfer", "no reply from authors\n(after three reminders)"))) +
+  geom_text(aes(y = rev(c(5,14,21,33)), 
+                label = sprintf("%d\n%.0f%%", nr, percent*100)), size=3.5, color = "white") +
+  guides(fill = guide_legend(reverse = TRUE)) + 
+  ggtitle("Data sharing during\npost-publication review")
+```
+
+
+```{r fig.height=5, fig.width=4}
+p2 = ggplot(data, aes(y=Rank.percentile, x=category, color=category)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("discipline") + ylab("journal rank (percentile)") +
+  scale_color_manual(values=COLORS4) + 
+  ggtitle("Journal ranking of published\nstudies in post-publication review")
+
+plot_grid(p1, p2, nrow = 2, ncol = 1, rel_heights = c(1,0.7))
+ggsave(path = PATH_FIGURES, filename = "poster_fig1.png", bg = "white", width = 4, height = 5, dpi = 600)
+```
+
+```{r}
+idx = tapply(data$Rank.percentile, data$category, function (x) which.max(x))
+data$JournalTitle[idx + c(0,10,20,30)]
+```
+
+```{r fig.height=2.5, fig.width=8}
+tab = data.frame(count = c(4, 7), cat = c("reviewed", "not yet reviewed"))
+tab$cat = factor(tab$cat, levels = c("reviewed", "not yet reviewed"))
+p1 = ggplot(tab, aes(x = cat, y = count, fill = cat)) +
+  geom_bar(stat = "identity", width = .6) +
+  scale_y_continuous(breaks=1:7) +
+  scale_fill_manual(values=COLORS4[c(1,4)]) +
+  theme_minimal() +
+  theme(axis.title.x = element_blank(),
+        axis.text = element_text(size = 11),
+        legend.position = "none") + ylab("no. of studies") +
+  ggtitle("Number of studies reviewed")
+
+tab = data.frame(count = c(1, 3, 0), cat = c("fully", "partly", "not reprod."))
+tab$cat = factor(tab$cat, levels =  c("fully", "partly", "not reprod."))
+p2 = ggplot(tab, aes(x = cat, y = count, fill = cat)) +
+  geom_bar(stat = "identity", width = .6) +
+  scale_y_continuous(breaks=1:3) +
+  scale_fill_manual(values=COLORS4[c(1,2,3)]) +
+  theme_minimal() +
+  theme(axis.title.x = element_blank(),
+        axis.text = element_text(size = 11),
+        legend.position = "none") + ylab("no. of studies") +
+  ggtitle("Number of studies reproduced")
+
+
+tab = data.frame(count = c(1, 0, 1, 2), cat = c("met", "var", "indep", "slopes"))
+tab$cat = factor(tab$cat, levels =  c("met", "var", "indep", "slopes"))
+p3 = ggplot(tab, aes(x = cat, y = count, fill = cat)) +
+  geom_bar(stat = "identity", width = .6) +
+  scale_y_continuous(breaks=1:2) + 
+  scale_x_discrete(labels=c("met" = "all met",
+                            "var" = "1 homog.\nvariances",
+                            "indep" = "2 indep.\ncovar.", 
+                            "slopes" = "3 homog.\nslopes")) +
+  scale_fill_manual(values=COLORS4[c(1,2,3,4)]) +
+  theme_minimal() +
+  theme(axis.title.x = element_blank(),
+        axis.text = element_text(size = 9),
+        legend.position = "none") + ylab("no. of studies") +
+  ggtitle("Violation of assumptions")
+
+plot_grid(p1, p2, p3, nrow = 1, ncol = 3, rel_heights = c(1, 1, 1.8))
+ggsave(path = PATH_FIGURES, filename = "poster_fig2.png", bg = "white", width = 8, height = 2.5, dpi = 600)
+```
+
