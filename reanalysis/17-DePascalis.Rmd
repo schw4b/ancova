@@ -20,7 +20,7 @@ library(effects)# for adjusted means
 library(ggplot2) # for graphs
 library(multcomp) #for post hoc test
 library(pastecs)# for descriptive statistics
-library(reshape)
+# library(reshape)
 library(effects)# for effect command
 library(ggplot2)
 library(beeswarm)

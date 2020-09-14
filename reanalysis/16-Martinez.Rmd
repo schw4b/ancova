@@ -1,13 +1,14 @@
 ---
-title: "Reanalysis of 06-Wile"
-author: "Simon Schwab^[University of Zurich, simon.schwab@uzh.ch]"
+title: "16-Martinez"
+author: "Audrey Yeo^[University of Zurich, simon.schwab@uzh.ch]"
 date: "01/06/2020"
 output: pdf_document
 toc: true
 ---
 
 # Reference
-Wile et al. (2017). Serotonin and dopamine transporter PET changes in the premotor phase of LRRK2 parkinsonism: cross-sectional studies. *Lancet Neurology*, 16(5), 351–359. https://doi.org/10.1016/S1474-4422(17)30056-X
+Wile et al. (2017). Convergent evolution of an extreme dietary specialisation, the olfactory system of worm-eating rodents
+rodents. *Lancet Neurology*, 16(5), 351–359. https://doi.org/10.1016/S1474-4422(17)30056-X
 
 ```{r, include=FALSE}
 # install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
@@ -20,15 +21,13 @@ library(ggplot2)
 ```
 
 # Notes from reading methods section
-* Dependant variable: PET radiotracer called 11C-DASB in cortex (first of many ANCOVAs reported)
-* Independant variable: Group
-  * Healty controls (n=9)
-  * LRRK2 w/o PD    (n=9)
-  * LRRK2 w PD      (n=7)
-  * sporadic PD     (n=13)
+* Dependant variable: 
+* Independant variable: 
+  * 
+  * 
+  * 
 * Covariate: age
-* age was not estimable for LRRK2 without manifest Parkinson's disease
-* Design: 1-way ANCOVA with group (4 leves) as IV and age as covariate
+* (other notes...)
 
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.

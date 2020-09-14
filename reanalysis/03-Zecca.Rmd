@@ -1,8 +1,9 @@
 ---
 title: "Reanalysis of 03-Zecca"
-author: "Simon Schwab"
+author: "Simon Schwab^[University of Zurich, simon.schwab@uzh.ch]"
 date: "01/06/2020"
 output: pdf_document
+toc: true
 ---
 
 # Reference
@@ -21,12 +22,12 @@ library(effects)
 ```
 
 # Notes from reading methods section
-* Dependant variable: Pain intensity (PI) (average across follow-ups, AVP_30)
-* Independant variable: treatment group
+* Dependent variable: Pain intensity (PI) (average across follow-ups, AVP_30)
+* Independent variable: treatment group
   * Fentanyl sublingual tablets FST (n=57, 1 from 58 was excluded)
   * Subcutaneous morphine SCM (n=56)
-* Covariate: basline PI
-* Design: 1-way ANCOVA with group as IV and baselie PI as covariate
+* Covariate: baseline PI
+* Design: 1-way ANCOVA with group as IV and baseline PI as covariate
 
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
@@ -39,7 +40,7 @@ data$tratt = as.factor(data$tratt)
 
 # Descriptives
 ## Dependant variable
-Number of samples and mean (SD) in levels of the independant variables.
+Number of samples and mean (SD) in levels of the independent variables.
 ```{r}
 tab.dv = array(NA, dim=c(2,3))
 tab.dv[,1] = levels(data$tratt)
@@ -190,8 +191,14 @@ ggplot(data, aes(y=pain_mea_30, x=pain_mea_bas, color=tratt, shape=tratt)) +
   geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
   theme_minimal() +
   theme(legend.title = element_blank()) +
-  xlab("Age at PET") + ylab("¹¹C-DASB in cortex")
+  xlab("pain at baseline") + ylab("pain follow-up")
 ```
 
+# Notes
+
+* Non-inferiority intervention study, ANCOVA is used to calculate adjusted means for the two groups (corrected for baseline pain)
+* Main finding partly reproduced, lower bound of the 95%-CI was wrong, probably a typo.
+* Our analysis was consistent with SAS output from authors
+* All assumptions met
 
 Data was analyzed according to recommendations by Field, Miles, & Field (2012).
