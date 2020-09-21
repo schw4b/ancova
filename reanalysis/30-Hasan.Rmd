@@ -1,0 +1,221 @@
+---
+title: "30-Hasan et al"
+author: "Audrey Yeo^[University of Zurich, audrey.yeo@uzh.ch]"
+date: "01/06/2020"
+output: pdf_document
+toc: true
+---
+
+# Reference
+Hasan et al (2017). Structural brain changes are associated with response of
+negative symptoms to prefrontal repetitive transcranial
+magnetic stimulation in patients with schizophrenia *Molecular Psychiatry* (2017) 22, 857–864. https://doi.org/10.1038/mp.2016.161
+
+```{r, include=FALSE}
+# install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
+library(biostatUZH)
+library(car)
+library(readxl)
+library(foreign)
+library(readxl)
+library(ggplot2)
+```
+
+# Notes from reading methods section
+The aim of the study was to determine whether negative symptom improvement in schizophrenia patients receiving rTMS (Treatment_Group = "Verum" versus "Sham") to the left dorsolateral prefrontal cortex (DLPFC) was related to brain volume changes. 73 schizophrenia patients with predominant negative symptoms were randomized to an active (n = 34) or sham (n = 39) rTMS intervention applied 5 days per week for 3 weeks to the left DLPFC.
+* Dependant variable: D_V_REL_Cluster1 or "brain volume changes"
+* Independant variable: Treatment_Group 
+* Covariate: "PANSS-NS%" or "negative symptom improvement"
+
+# Reading data
+Data is loaded, reshaped if necessary, and factors are specified.
+```{r}
+PATH = file.path(path.expand("~"), "CRS", "ancova") # ancova project folder
+# I created the .rda file with the following code, so it requires just to be loaded
+# data = read_spss(file.path(PATH, "dataPrimaryStudies", "30-Hasan", "30-Hasan.sav"))
+# PATH1 = file.path(PATH, "dataPrimaryStudies", "30-Hasan", "30-Hasan.sav")
+# spss_data <- file.choose(PATH1)
+# spss_data <- read.spss(spss_data, to.data.frame = TRUE)
+# data <- spss_data
+# save(data, file = "Desktop/CRS/ancova/dataPrimaryStudies/30-Hasan/30-Hasan.rda")
+load("../../ancova/dataPrimaryStudies/30-Hasan/30-Hasan.rda")
+str(data)
+```
+
+# Descriptives
+## Dependant variable
+The relationship between DV and IV. The means per treatment group are quite similar but not the same, see also following boxplot.
+```{r}
+# idx = c(1, 3, 2, 4) # sorting as in publication
+tab.dv = array(NA, dim=c(2,3))
+tab.dv[,1] = levels(data$Treatment_Group)
+tab.dv[,2] = summary(data$Treatment_Group)
+tab.dv[,3] = tapply(data$D_V_REL_Cluster1, data$Treatment_Group, 
+                  function (x) sprintf("%0.2f (%0.2f)", mean(x), sd(x)))
+colnames(tab.dv) = c("group", "n", "mean (SD)") # really high means
+print(tab.dv)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=D_V_REL_Cluster1, x=Treatment_Group, color=Treatment_Group)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("Volume Change %") + ggtitle("Dependant variable")
+```
+
+## Covariate(s)
+The means of covariates vary marginally with large standard errors, also see boxplot.
+```{r}
+# idx = c(1, 3, 2, 4) # sorting as in publication
+tab.cv = array(NA, dim=c(2,3))
+tab.cv[,1] = levels(data$Treatment_Group)
+tab.cv[,2] = summary(data$Treatment_Group)
+tab.cv[,3] = tapply(data$D_PANSS_NS_REL, data$Treatment_Group, 
+                  function (x) sprintf("%0.1f (%0.1f)", mean(x), sd(x)))
+colnames(tab.cv) = c("group", "n", "mean (SD)")
+print(tab.cv) # large SD
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=D_PANSS_NS_REL, x=Treatment_Group, color=Treatment_Group)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("negative score improvement (%)") + ggtitle("Covariate")
+```
+
+# Main analysis ANCOVA
+
+```{r, include=FALSE}
+# main effect of treament group
+stats.orig.IV = data.frame(
+  Fvalue =  0.02,
+  df1 = 3,
+  df2 = 67,
+  pvalue = 0.996, #n.s.
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
+# main effect of covariate
+stats.orig.CV = data.frame(
+  Fvalue =  5.86,
+  df1 = 3,
+  df2 = 67,
+  pvalue = 0.001,
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
+# main effect of covariate and treamtnet group interaction F(3,67) = 7.24, p < 0.0005)
+stats.orig.int = data.frame(
+  Fvalue =  7.24,
+  df1 = 3,
+  df2 = 67,
+  pvalue = "<0.0005",
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
+```
+
+
+```{r}
+contrasts(data$Treatment_Group) = contr.helmert(2) 
+
+fit.ancova = aov(D_V_REL_Cluster1 ~ Treatment_Group + D_PANSS_NS_REL , data = data)
+# result = summary(fit) # Type I
+result = Anova(fit.ancova, type=3) # Type III
+print(result)
+```
+
+```{r, include=FALSE}
+stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
+                          df1 = result$Df[3],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[3]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+
+stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+                          df1 = result$Df[2],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[2]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+```
+
+# Comparing ANCOVA in original study with reanalysis
+## Independant variable
+```{r}
+tab.IV = rbind(stats.orig.IV, stats.rep.IV)
+rownames(tab.IV) = c("original Study", "reanalysis")
+print(t(tab.IV))
+```
+
+## Covariate
+```{r}
+tab.CV = rbind(stats.orig.CV, stats.rep.CV)
+rownames(tab.CV) = c("original Study", "reanalysis")
+print(t(tab.CV))
+```
+
+# Assumptions
+## 1.  Homogeneity of variance
+* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
+* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
+* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
+```{r}
+tapply(data$D_V_REL_Cluster1, data$Treatment_Group, sd) # sd are similar
+leveneTest(D_V_REL_Cluster1 ~ data$Treatment_Group, data = data) # P(>F) is 0.5283, there is homogeneity of variabcce
+```
+
+
+## 2.  Independence between covariate and IV
+When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
+
+We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
+
+In this reanalysis, there is independance between CV and IV
+```{r}
+fit.cv = aov(data$D_PANSS_NS_REL ~ data$Treatment_Group, data = data) 
+summary(fit.cv)
+```
+
+
+## 3. Homogeneity of regression slopes
+The slopes are not parallel with each treatment group.
+```{r}
+fit.hrs = aov(data$D_V_REL_Cluster1 ~  D_PANSS_NS_REL*Treatment_Group, data = data)
+Anova(fit.hrs, type=3)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=D_V_REL_Cluster1, x=D_PANSS_NS_REL, color=Treatment_Group, shape=Treatment_Group)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  xlab("Symptom scoring") + ylab("Volume changes")
+```
+
+
+# Additional analyses: MANCOVA
+The paper performed four ANCOVAs for each dependant variable
+```{r}
+fit = manova(cbind(data$D_V_REL_Cluster1, data$D_V_REL_Cluster2, data$D_V_REL_Cluster3) ~ Treatment_Group + D_PANSS_NS_REL,
+             data=data)
+summary(fit)
+```
+
+# Notes
+
+* The first reported ANCOVA which was n.s. was reproduced
+* p-value was reported
+* Assumptions were met, except homogeneity of regression slopes showing a different relationship of outcome and covariate between the two groups
+
+Data was analyzed according to recommendations by Field, Miles, & Field (2012).
