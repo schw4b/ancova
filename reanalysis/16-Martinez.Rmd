@@ -1,14 +1,14 @@
 ---
 title: "16-Martinez"
 author: "Audrey Yeo^[University of Zurich, simon.schwab@uzh.ch]"
-date: "01/06/2020"
+date: "01/09/2020"
 output: pdf_document
 toc: true
 ---
 
 # Reference
-Wile et al. (2017). Convergent evolution of an extreme dietary specialisation, the olfactory system of worm-eating rodents
-rodents. *Lancet Neurology*, 16(5), 351–359. https://doi.org/10.1016/S1474-4422(17)30056-X
+Martinez et al. (2018). Convergent evolution of an extreme dietary specialisation, the olfactory system of worm-eating rodents
+rodents. *Scientific Reports*, 17806(8), 351–359. https://doi.org/10.1038/s41598-018-35827-0
 
 ```{r, include=FALSE}
 # install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
@@ -32,9 +32,9 @@ library(ggplot2)
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r}
-PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
-data = read_excel(file.path(PATH, "dataPrimaryStudies", "06-Wile", "06-Wile.xlsx"))
-
+PATH = file.path(path.expand("~"), "CRS", "ancova") # ancova project folder
+data = read_excel(file.path(PATH, "dataPrimaryStudies", "16-Martinez", "testancova.csv"))
+load("")
 # group variable is dummy coded, key for AncovaVariable file
 # 0 = healthy control, 1 = LRRK2 premanifest, 2 = LRRK2 affected, 3 = sporadic PD
 data$Group.factor = NA

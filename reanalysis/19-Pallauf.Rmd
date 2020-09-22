@@ -27,7 +27,7 @@ An analysis of covariances (ANCOVA) was con- ducted for the weight development. 
   * CON, 
   * RSV, 
   * DHR, 
-  *LUN
+  * LUN
 * Covariate: Time
 
 # Reading data

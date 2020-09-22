@@ -207,7 +207,9 @@ ggplot(data, aes(y=D_V_REL_Cluster1, x=D_PANSS_NS_REL, color=Treatment_Group, sh
 # Additional analyses: MANCOVA
 The paper performed four ANCOVAs for each dependant variable
 ```{r}
-fit = manova(cbind(data$D_V_REL_Cluster1, data$D_V_REL_Cluster2, data$D_V_REL_Cluster3) ~ Treatment_Group + D_PANSS_NS_REL,
+fit = manova(cbind(data$D_V_REL_Cluster1, 
+                   data$D_V_REL_Cluster2, data$D_V_REL_Cluster3) ~ 
+               Treatment_Group + D_PANSS_NS_REL,
              data=data)
 summary(fit)
 ```
