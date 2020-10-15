@@ -39,7 +39,6 @@ PATH = file.path(path.expand("~"), "CRS", "ancova") # ancova project folder
 # data <- spss_data
 # save(data, file = "Desktop/CRS/ancova/dataPrimaryStudies/30-Hasan/30-Hasan.rda")
 load("../../ancova/dataPrimaryStudies/30-Hasan/30-Hasan.rda")
-str(data)
 ```
 
 # Descriptives
@@ -95,28 +94,19 @@ stats.orig.IV = data.frame(
   Fvalue =  0.02,
   df1 = 3,
   df2 = 67,
-  pvalue = 0.996, #n.s.
-  MD = NA,
-  lowerCI = NA,
-  upperCI = NA)
+  pvalue = 0.996)
 # main effect of covariate
 stats.orig.CV = data.frame(
   Fvalue =  5.86,
   df1 = 3,
   df2 = 67,
-  pvalue = 0.001,
-  MD = NA,
-  lowerCI = NA,
-  upperCI = NA)
+  pvalue = 0.001)
 # main effect of covariate and treamtnet group interaction F(3,67) = 7.24, p < 0.0005)
 stats.orig.int = data.frame(
   Fvalue =  7.24,
   df1 = 3,
   df2 = 67,
-  pvalue = "<0.0005",
-  MD = NA,
-  lowerCI = NA,
-  upperCI = NA)
+  pvalue = "<0.0005")
 ```
 
 
@@ -133,19 +123,13 @@ print(result)
 stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
                           df1 = result$Df[3],
                           df2 = result$Df[4],
-                          pvalue = formatPval(result$`Pr(>F)`[3]),
-                          MD = NA,
-                          lowerCI = NA,
-                          upperCI = NA
+                          pvalue = formatPval(result$`Pr(>F)`[3])
 )
 
 stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
                           df1 = result$Df[2],
                           df2 = result$Df[4],
-                          pvalue = formatPval(result$`Pr(>F)`[2]),
-                          MD = NA,
-                          lowerCI = NA,
-                          upperCI = NA
+                          pvalue = formatPval(result$`Pr(>F)`[2])
 )
 ```
 
