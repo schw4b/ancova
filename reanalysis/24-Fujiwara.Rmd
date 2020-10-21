@@ -65,7 +65,7 @@ print(tab.dv)
 ```
 
 ```{r fig.height=2, fig.width=3.5}
-ggplot(longdata, aes(y=dev, x=TAS_group, color=group)) +
+ggplot(longdata, aes(y=dev, x=TAS_group, color=TAS_group)) +
   geom_boxplot() +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
   theme_minimal() +
@@ -123,7 +123,6 @@ stats.orig.IV1 = data.frame(
   df1 = 1,
   df2 = 146,
   pvalue = "<0.001")
-
 stats.orig.CV1 = stats.orig.IV1
 stats.orig.CV2 = stats.orig.IV1
 ```
@@ -145,7 +144,6 @@ stats.orig.CV1 = data.frame(
   df1 = 1,
   df2 = 146,
   pvalue = "<0.001")
-
 stats.orig.CV2 = data.frame(
   Fvalue =  33.07,
   df1 = 1,
@@ -160,15 +158,11 @@ contrasts(longdata$TAS_group) = contr.helmert(2)
 contrasts(longdata$amb) = contr.helmert(2) 
 contrasts(longdata$emo) = contr.helmert(6) 
 
-aov(dev ~ time + dass + group*emo*amb + Error(id/(emo*amb)) + group, data = longdata)
+#aov(dev ~ time + dass + group*emo*amb + Error(id/(emo*amb)) + TAS_group, data = longdata)
 
 
-fit.ancova = aov(dev ~ time + dass + group*emo*amb, data = longdata)
+fit.ancova = aov(dev ~ time + dass + TAS_group*emo*amb, data = longdata)
 result = Anova(fit.ancova)
-
-
-# fit.ancova = aov(dev ~ time + dass + group*emo*amb + group, data = longdata)
-# Anova(fit.ancova, type = "III")
 ```
 
 ```{r, include=FALSE}
