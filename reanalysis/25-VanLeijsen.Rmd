@@ -71,7 +71,7 @@ data$hypertension.factor  = data$hypertension == 1
 
 # Descriptives
 ## Dependant variable
-Number of samples and mean (SD) in levels of the independant variables. We reproduce the mean and sd values of Table 2 of this study
+Number of samples and mean (SD) in levels of the independent variables. We reproduce the mean and sd values of Table 2 of this study
 ```{r}
 
 tab.dv = array(NA, dim=c(4,2))
@@ -81,11 +81,15 @@ colnames(tab.dv) = c("n", "mean (SD)")
 tab.dv[,1] = c(rev(summary(data$mb_presence_b.factor)),
                  rev(summary(data$lac_presence_b.factor)))
 
-tab.dv[1,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 0]), sd(data$AB38[data$mb_presence_b == 0]))
-tab.dv[2,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 1]), sd(data$AB38[data$mb_presence_b == 1]))
+tab.dv[1,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 0]),
+                      sd(data$AB38[data$mb_presence_b == 0]))
+tab.dv[2,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 1]),
+                      sd(data$AB38[data$mb_presence_b == 1]))
 
-tab.dv[3,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 0]), sd(data$AB38[data$lac_presence_b == 0]))
-tab.dv[4,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 1]), sd(data$AB38[data$lac_presence_b == 1]))
+tab.dv[3,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 0]),
+                      sd(data$AB38[data$lac_presence_b == 0]))
+tab.dv[4,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 1]),
+                      sd(data$AB38[data$lac_presence_b == 1]))
 
 print(tab.dv)
 ```
@@ -201,18 +205,45 @@ stats.orig.IVlacunes = data.frame(
   df2 = NA,
   pvalue = "n.s.")
 ``` 
-
+## What has been done in the paper (one-way analyses)
 ```{r}
 # Orthogonal contrasts
 contrasts(data$mb_presence_b.factor) = contr.helmert(2) 
 contrasts(data$lac_presence_b.factor) = contr.helmert(2) 
 
-# fit.ancova= aov(AB38 ~ mb_presence_b.factor*lac_presence_b.factor , data = data)
-fit.ancova = aov(AB40 ~ age + sex.factor + hypertension.factor + tbv_b + mb_presence_b.factor*lac_presence_b.factor, data = data)
-result = Anova(fit.ancova, type = 3) # Type III
+# unadjusted one-way (not appropriate but thats what has been done in the paper)
+fit.ancova= aov(AB38 ~ mb_presence_b.factor, data = data)
+Anova(fit.ancova, type = 3)
+fit.ancova= aov(AB38 ~ lac_presence_b.factor, data = data)
+Anova(fit.ancova, type = 3)
 
+# adjusted for all covariates
+fit.ancova = aov(AB40 ~ age + sex.factor + hypertension.factor +
+                   tbv_b + mb_presence_b.factor, data = data)
+Anova(fit.ancova, type = 3) # Type III
+
+fit.ancova = aov(AB40 ~ age + sex.factor + hypertension.factor +
+                   tbv_b + lac_presence_b.factor, data = data)
+Anova(fit.ancova, type = 3) # Type III
+```
+## What should have been done in the paper (two-way analysis)
+```{r}
+# Orthogonal contrasts
+contrasts(data$mb_presence_b.factor) = contr.helmert(2) 
+contrasts(data$lac_presence_b.factor) = contr.helmert(2) 
+
+# unadjusted
+fit.ancova= aov(AB38 ~ mb_presence_b.factor*lac_presence_b.factor, data = data)
+result = Anova(fit.ancova, type = 3) # Type III
+print(result)
+
+# adjusted for all covariates
+fit.ancova = aov(AB40 ~ age + sex.factor + hypertension.factor +
+                   tbv_b + mb_presence_b.factor*lac_presence_b.factor, data = data)
+result = Anova(fit.ancova, type = 3) # Type III
 print(result)
 ```
+
 
 # Comparing ANCOVA in original study with reanalysis
 We skip this section as no p-values or test statistics are reported.
@@ -249,7 +280,7 @@ Anova(fit.cv.hypertension, type=3)
 
 # Total brain volume
 fit.cv.tbw = aov(tbv_b ~ lac_presence_b + mb_presence_b, data = data) 
-Anova(fit.cv.age, type=3)
+Anova(fit.cv.tbw, type=3)
 ```
 
 ## 3. Homogeneity of regression slopes
@@ -275,9 +306,11 @@ Anova(aov(AB38 ~ tbv_b*lac_presence_b.factor, data = data), type=3)
 
 # Notes
 
-* We reproduced the non-significant result, i.e. the lack of evidence for microbleeds and lacunes to have an effect on Abeta38 using ANCOVA and the 4 covariates.
-* However, we could not reproduce an effect of lacunes reported when not taking in account the covariates, and we could not reproduce the Ab40 result.
-* No exact p-values and no test statistics are reported for the analysis with Abeta38 and Abeta40.
-* Assumptions were not met: three covariates age, hypertension and total brain volume were not independent from the group variable (microbleed or lacunes).
+* The authors performed both unadjusted (using ANOVA) and adjusted analyses (using ANCOVA).
+* We reproduced the effect of microbleeds and lacunes on ABeta38 using two one-ways ANOVAs.
+* However, the appropriate analysis would be a 2-way ANOVA and here only an effect of microbleeds was statistically significant.
+* We could not reproduce the result with ANCOVA with 4 covariates (named model 4). There was again an effect of microbleeds, but the paper reported it was not significant.
+* No exact p-values and no test statistics were reported.
+* Some assumptions were not met: three covariates age, hypertension and total brain volume were not independent from the group variable.
 
-Reference : Field, Miles & Miles (2012), Discovering Statistics, Published by Sage Pub, UK.
+Data was analyzed according to recommendations by Field, Miles, & Field (2012).
