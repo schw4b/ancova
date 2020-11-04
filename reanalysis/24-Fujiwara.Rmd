@@ -7,7 +7,7 @@ toc: true
 ---
 
 # Reference
-Fujiwara, E. (2018). Looking at the eyes interferes with facial emotion recognition in alexithymia. *Journal of Abnormal Psychology*, 127(6), 571???577. https://doi.org/10.1037/abn0000361
+Fujiwara, E. (2018). Looking at the eyes interferes with facial emotion recognition in alexithymia. *Journal of Abnormal Psychology*, 127(6), 571-577. https://doi.org/10.1037/abn0000361
 
 ```{r, include=FALSE}
 # install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
@@ -36,16 +36,13 @@ Data is loaded, reshaped into long form, and factors are specified.
 # data <- spss_data
 # save(data, file = "../dataPrimaryStudies/24-Fujiwara/24-Fujiwara.rda") # easier to call
 load("../../ancova/dataPrimaryStudies/24-Fujiwara/24-Fujiwara.rda")
-#long = data.matrix(data[, 4:15])
-#var_names = t(colnames(data))[4:15] # there are the column names I should have 2x of
+
 longdata = data.frame(dev = c(data.matrix(data[,4:15])))
-#longdata$dev = data.frame(longdata$dev)
 longdata$id = as.factor(rep(1:149, 12))
 longdata$TAS_group = as.factor(rep(data$TAS_group, 12))
-longdata$TAS_group = factor(longdata$TAS_group, levels = c("No Alexithymia", "High Alexithymia"), ordered =FALSE)
+longdata$TAS_group = factor(longdata$TAS_group, levels = c("No Alexithymia", "High Alexithymia"), ordered =TRUE)
 longdata$amb = as.factor(c(rep("clear", 149*6), rep("ambigious", 149*6)))
-longdata$emo = as.factor(c(rep("anger", 149), rep("disgust",149), rep("fear",149),
-                           rep("happiness", 149), rep( "sadness", 149), rep("surprise", 149)))
+longdata$emo = as.factor(c(rep("anger", 149), rep("disgust",149), rep("fear",149), rep("happiness", 149), rep( "sadness", 149), rep("surprise", 149)))
 longdata$dass = rep(data$DASS_tot, 12)
 longdata$time = rep(data$log_lat, 12)
 ```
@@ -87,7 +84,7 @@ tab.cv1 = tab.cv
 print(tab.cv1)
 ```
 
-```{r fig.height=2, fig.width=3.5, echo = FALSE}
+```{r }
 p1 = ggplot(longdata, aes(y=dass, x=TAS_group, color=TAS_group)) +
   geom_boxplot() +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
@@ -116,38 +113,29 @@ print(tab.cv2)
 ```
 
 # Main analysis ANCOVA
-Independant variable: Ambiguity
+Independant variable: TAS_group (Between Group)
 ```{r, include=FALSE}
 stats.orig.IV1 = data.frame(
+  Fvalue =  0.83,
+  df1 = 1,
+  df2 = 145,
+  pvalue = "0.57")
+```
+Independant variable: Ambiguity
+```{r, include=FALSE}
+stats.orig.IV2 = data.frame(
   Fvalue =  33.07,
   df1 = 1,
   df2 = 146,
   pvalue = "<0.001")
-stats.orig.CV1 = stats.orig.IV1
-stats.orig.CV2 = stats.orig.IV1
 ```
 
 Independant variable: Emotion
 ```{r, include=FALSE}
-stats.orig.IV2 = data.frame(
+stats.orig.IV3 = data.frame(
   Fvalue =  4.75,
   df1 = 4.72,
   df2 = 689.06,
-  pvalue = "<0.001")
-```
-
-
-
-```{r, include=FALSE}
-stats.orig.CV1 = data.frame(
-  Fvalue =  33.07,
-  df1 = 1,
-  df2 = 146,
-  pvalue = "<0.001")
-stats.orig.CV2 = data.frame(
-  Fvalue =  33.07,
-  df1 = 1,
-  df2 = 146,
   pvalue = "<0.001")
 ```
 
@@ -160,43 +148,56 @@ contrasts(longdata$emo) = contr.helmert(6)
 
 #aov(dev ~ time + dass + group*emo*amb + Error(id/(emo*amb)) + TAS_group, data = longdata)
 
-
 fit.ancova = aov(dev ~ time + dass + TAS_group*emo*amb, data = longdata)
-result = Anova(fit.ancova)
+result = Anova(fit.ancova, type = "III")
+print(result)
 ```
 
 ```{r, include=FALSE}
-stats.rep.IV1 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
-                          df1 = result$Df[3],
-                          df2 = result$Df[6],
-                          pvalue = formatPval(result$`Pr(>F)`[3]))
-
-stats.rep.IV2 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
+stats.rep.IV1 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[4]),
                           df1 = result$Df[4],
-                          df2 = result$Df[6],
-                          pvalue = formatPval(result$`Pr(>F)`[3]))
+                          df2 = result$Df[11],
+                          pvalue = formatPval(result$`Pr(>F)`[4]))
 
-stats.rep.CV1 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
-                          df1 = result$Df[1],
-                          df2 = result$Df[6],
-                          pvalue = formatPval(result$`Pr(>F)`[2]))
+stats.rep.IV2 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[5]),
+                          df1 = result$Df[5],
+                          df2 = result$Df[11],
+                          pvalue = formatPval(result$`Pr(>F)`[5]))
 
-stats.rep.CV2 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
-                          df1 = result$Df[2],
-                          df2 = result$Df[6],
-                          pvalue = formatPval(result$`Pr(>F)`[2]))
+stats.rep.IV3 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[6]),
+                          df1 = result$Df[6],
+                          df2 = result$Df[11],
+                          pvalue = formatPval(result$`Pr(>F)`[6]))
+
+
 ```
 
 # Comparing ANCOVA in original study with reanalysis
 ## Independant variable
+
 ```{r}
-tab.IV = rbind(stats.orig.IV1, stats.orig.IV1,  stats.rep.IV2)
-rownames(tab.IV) = c("original study's IV: Ambiguity", "original study's IV: Emotion", "reanalysis")
+tab.IV = rbind(stats.orig.IV1, stats.rep.IV1, stats.orig.IV2, stats.rep.IV2,   stats.orig.IV3, stats.rep.IV3)
+rownames(tab.IV) = c("orig TAS_group", "reanalysis TAS_group", "orig Ambiguity", "reanalysis Ambiguity", "orig Emotion", "reanalysis Emotion")
 print(t(tab.IV))
 ```
 
 ## Covariate
 ```{r}
+stats.orig.CV1 = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = NA)
+stats.orig.CV2 = stats.orig.CV1
+stats.rep.CV1 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[1]),
+                          df1 = result$Df[1],
+                          df2 = result$Df[11],
+                          pvalue = formatPval(result$`Pr(>F)`[1]))
+
+stats.rep.CV2 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+                          df1 = result$Df[2],
+                          df2 = result$Df[11],
+                          pvalue = formatPval(result$`Pr(>F)`[2]))
 tab.CV = rbind(stats.orig.CV1, stats.orig.CV2, stats.rep.CV1, stats.rep.CV2)
 rownames(tab.CV) = c("original Study COV : Time", "original Study COV: DASS", "reanalysis of COV : Time", "reanalysis of COV : DASS")
 print(t(tab.CV))
@@ -204,22 +205,14 @@ print(t(tab.CV))
 
 # Assumptions
 ## 1.  Homogeneity of variance
-* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
-* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
-* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
-
-There is a similar standard deviation between groups. There is no evidence of significance that there is no homogeneity of variance.
+There is a similar standard deviation between groups. There is no evidence of significance that there is no homogeneity of variance. F statistic shows evidence of significance.
 ```{r}
 tapply(longdata$dass, longdata$TAS_group, sd)
 leveneTest(dass ~ TAS_group, data = longdata)
 ```
 
 
-## 2.  Independence between covariate and IV
-When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
-
-We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
-
+## 2.  Independence between covariate and IV.
 There is no evidence of significance, that groups differ in their DASS_total scores but marginal evidence that groups differ with log of time). Thus, these covariate is appropriate for this analysis.
 ```{r}
 fit.cv1 = aov(longdata$dass ~ TAS_group, data = longdata) 
@@ -231,17 +224,16 @@ summary(fit.cv2)
 
 
 ## 3. Homogeneity of regression slopes
-
-There is no evidence of significance that groups interact with DASS scores, neither does group interact with time, this is confirmed on visual inspection.
+There is no evidence of significance that groups interact with DASS scores, neither does group interact with time, this is confirmed on visual inspection. This there is evidence of homogeneity of regression slopes for the DASS and time variables.
 ```{r}
 fit.hrs = aov(dev ~ dass*TAS_group, data = longdata)
-Anova(fit.hrs, type = "II")
+Anova(fit.hrs, type = "III") 
 
 fit.hrs = aov(dev ~ time*TAS_group, data = longdata)
-Anova(fit.hrs, type="II")
+Anova(fit.hrs, type="III")
 ```
 
-```{r fig.height=2, fig.width=3.5}
+```{r }
 p1 = ggplot(longdata, aes(y=dev, x=time, color = TAS_group, shape= TAS_group)) +
   geom_point() +
   geom_smooth(formula = y ~ x, method=lm, se=FALSE, fullrange=TRUE) +
@@ -263,6 +255,7 @@ plot_grid(p1, p2, nrow = 1, ncol = 2)
 # Notes
 
 <!-- * The first reported ANCOVA which was n.s. was reproduced --> -->
-* Assumptions were met for ancova analysis.
-
+* Assumptions were met for ancova analysis except homogeneity of variance.
+* Non-significant results were found in reanalysis
+* The effect of Ambiguity had evidence of significant, with the main effects being very similar (23.19 in original student and 33.07 in reanalysis). The effect of Emotion has evidence of significance, though the effect is largely dissimilar. 
 Data was analyzed according to recommendations by Field, Miles, & Field (2012).

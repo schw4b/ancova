@@ -22,14 +22,14 @@ library(ggplot2)
 ```
 
 # Notes from reading methods section
-The aim of the study was to determine whether negative symptom improvement in schizophrenia patients receiving rTMS (Treatment_Group = "Verum" versus "Sham") to the left dorsolateral prefrontal cortex (DLPFC) was related to brain volume changes. 73 schizophrenia patients with predominant negative symptoms were randomized to an active (n = 34) or sham (n = 39) rTMS intervention applied 5 days per week for 3 weeks to the left DLPFC.
+The aim of the study was to determine whether negative symptom improvement in schizophrenia patients receiving rTMS (Treatment_Group = "Verum" versus "Sham") to the left dorsolateral prefrontal cortex (DLPFC) was related to brain volume changes. A total of 73 patients with schizoprenia and predominant negative symptoms were randomized to an active (n = 34) or sham (n = 39) rTMS intervention applied 5 days per week for 3 weeks to the left DLPFC.
 * Dependant variable: D_V_REL_Cluster1 or "brain volume changes"
 * Independant variable: Treatment_Group 
 * Covariate: "PANSS-NS%" or "negative symptom improvement"
 
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
-```{r}
+```{r, echo = FALSE}
 PATH = file.path(path.expand("~"), "CRS", "ancova") # ancova project folder
 # I created the .rda file with the following code, so it requires just to be loaded
 # data = read_spss(file.path(PATH, "dataPrimaryStudies", "30-Hasan", "30-Hasan.sav"))
@@ -51,7 +51,7 @@ tab.dv[,1] = levels(data$Treatment_Group)
 tab.dv[,2] = summary(data$Treatment_Group)
 tab.dv[,3] = tapply(data$D_V_REL_Cluster1, data$Treatment_Group, 
                   function (x) sprintf("%0.2f (%0.2f)", mean(x), sd(x)))
-colnames(tab.dv) = c("group", "n", "mean (SD)") # really high means
+colnames(tab.dv) = c("group", "n", "mean (SD)") # large SD noted and manually checked to be correct
 print(tab.dv)
 ```
 
@@ -61,7 +61,7 @@ ggplot(data, aes(y=D_V_REL_Cluster1, x=Treatment_Group, color=Treatment_Group)) 
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("group") + ylab("Volume Change %") + ggtitle("Dependant variable")
+  xlab("Group") + ylab("Volume Change %") + ggtitle("Dependant variable")
 ```
 
 ## Covariate(s)
@@ -74,7 +74,7 @@ tab.cv[,2] = summary(data$Treatment_Group)
 tab.cv[,3] = tapply(data$D_PANSS_NS_REL, data$Treatment_Group, 
                   function (x) sprintf("%0.1f (%0.1f)", mean(x), sd(x)))
 colnames(tab.cv) = c("group", "n", "mean (SD)")
-print(tab.cv) # large SD
+print(tab.cv) # large SD noted and manually checked to be correct
 ```
 
 ```{r fig.height=2, fig.width=3.5}
@@ -83,7 +83,7 @@ ggplot(data, aes(y=D_PANSS_NS_REL, x=Treatment_Group, color=Treatment_Group)) +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
   theme_minimal() +
   theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("group") + ylab("negative score improvement (%)") + ggtitle("Covariate")
+  xlab("Group") + ylab("Negative score \n improvement (%)") + ggtitle("Covariate")
 ```
 
 # Main analysis ANCOVA

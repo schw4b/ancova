@@ -32,26 +32,28 @@ library(ggplot2)
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r}
-PATH = file.path(path.expand("~"), "CRS", "ancova") # ancova project folder
-data = read_excel(file.path(PATH, "dataPrimaryStudies", "16-Martinez", "testancova.csv"))
-load("")
+# PATH = file.path(path.expand("~"), "CRS", "ancova")
+# PATH = file.path(path.expand("~"), "CRS", "ancova") # ancova project folder
+# data = read.csv(file.path(PATH, "dataPrimaryStudies", "16-Martinez", "testancova.csv"))
+data = read.csv("../dataPrimaryStudies/16-Martinez/testancova.csv")
+head(data, 6)
+unique(data$DIET)
 # group variable is dummy coded, key for AncovaVariable file
 # 0 = healthy control, 1 = LRRK2 premanifest, 2 = LRRK2 affected, 3 = sporadic PD
 data$Group.factor = NA
-data$Group.factor[data$Group == 0] = "healthy control"
-data$Group.factor[data$Group == 1] = "LRRK2 premanifest"
-data$Group.factor[data$Group == 2] = "LRRK2 affected"
-data$Group.factor[data$Group == 3] = "sporadic PD"
+data$Group.factor[data$Group == 0] = "INSEC"
+data$Group.factor[data$Group == 1] = "OMNI"
+data$Group.factor[data$Group == 2] = "WORM"
 data$Group.factor = factor(data$Group.factor,
-                           levels = c("healthy control", "LRRK2 premanifest",
-                                      "LRRK2 affected", "sporadic PD"))
+                           levels = c("INSEC", "OMNI",
+                                      "WORM"))
 ```
 
 # Descriptives
 ## Dependant variable
 Number of samples and mean (SD) in levels of the independant variables. We reproduce Table 3 and Figure 2A of the study.
 ```{r}
-idx = c(1, 3, 2, 4) # sorting as in publication
+# idx = c(1, 3, 2, 4) # sorting as in publication
 tab.dv = array(NA, dim=c(4,3))
 tab.dv[,1] = levels(data$Group.factor)
 tab.dv[,2] = summary(data$Group.factor)
