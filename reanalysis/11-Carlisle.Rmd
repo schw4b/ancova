@@ -34,7 +34,7 @@ library(effects)
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r}
-PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
+PATH = file.path(path.expand("~"), "Data", "ancova") # ANCOVA project folder
 data = read.csv(file.path(PATH, "dataPrimaryStudies", "11-Carlisle", "11-Carlisle-original.txt"),
                 sep = "", header = TRUE)
 
@@ -113,8 +113,8 @@ stats.orig.IV$pvalue = "< 0.0001"
 # Orthogonal contrasts
 contrasts(data$Species.name) = contr.helmert(3) 
 
-# The author did not run a classic ancova with IV + COV, but instea an interaction IV*COV similar ro testing
-# the homogenity of slope assumption
+# The author did not run a classic ANCOVA with IV + COV, but instead an interaction
+# COV*IV similar to testing the homogeneity of slope assumption
 fit.ancova = aov(log(Olfactory_Bulb) ~ log(Whole_Brain_Volume-Olfactory_Bulb)*Species, data = data)
 result = Anova(fit.ancova, type=3) # Type III
 print(result)
@@ -210,11 +210,13 @@ summary(fit)
 # Notes
 
 * First main result reproduced
-* Assumptions hold. Homogenity of regression slopes was part of the research questions (Table 2).
-* ANCOVA used with interactions term for species and whole brain volume, not to regress covariate
+* Assumptions hold. Homogeneity of regression slopes was part of the research questions (Table 2).
+* ANCOVA used with interactions term for species and whole brain volume, not to (globally) regress covariate
 * Log transform of IV and CV was successful
-* Lots of models tested, no correction for multiplicity
 * Helpful R code was supplied
 * Model was clearly specified in the methods section
+* Explain ANCOVA in the framework of regression (slope, intercept)
+* Table 2 is confusing as p-values were associated with the DV instead of the IV
+* Lots of models tested, no correction for multiplicity (7 ANCOVAs were run across different brain regions)
 
 Data was analyzed according to recommendations by Field, Miles, & Field (2012).
