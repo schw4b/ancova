@@ -21,14 +21,14 @@ library(ggplot2)
 
 # Notes from reading methods section
 * Dependant variable: PET radiotracer called 11C-DASB in cortex (first of many ANCOVAs reported)
-* Independant variable: Group
+* Independent variable: Group
   * Healty controls (n=9)
   * LRRK2 w/o PD    (n=9)
   * LRRK2 w PD      (n=7)
   * sporadic PD     (n=13)
 * Covariate: age
 * age was not estimable for LRRK2 without manifest Parkinson's disease
-* Design: 1-way ANCOVA with group (4 leves) as IV and age as covariate
+* Design: 1-way ANCOVA with group (4 levels) as IV and age as covariate
 
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
