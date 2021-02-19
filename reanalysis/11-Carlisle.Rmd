@@ -142,7 +142,7 @@ stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
 ```
 
 # Comparing ANCOVA in original study with reanalysis
-## Independant variable
+## Independent variable
 ```{r}
 tab.IV = rbind(stats.orig.IV, stats.rep.IV)
 rownames(tab.IV) = c("original Study", "reanalysis")
@@ -193,7 +193,7 @@ ggplot(data, aes(y=log(Olfactory_Bulb), x=log(Whole_Brain_Volume-Olfactory_Bulb)
   xlab("whole brain volume") + ylab("olfactory bulb")
 ```
 
-# Additonal analyses
+# Additional analyses
 ```{r fig.height=2, fig.width=2}
 # Reproducing Figure 4
 ggplot(data, aes(x = log(Whole_Brain_Volume), y = log(Olfactory_Bulb))) +

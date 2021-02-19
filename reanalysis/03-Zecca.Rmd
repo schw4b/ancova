@@ -39,7 +39,7 @@ data$tratt = as.factor(data$tratt)
 ```
 
 # Descriptives
-## Dependant variable
+## Dependent variable
 Number of samples and mean (SD) in levels of the independent variables.
 ```{r}
 tab.dv = array(NA, dim=c(2,3))
@@ -144,7 +144,7 @@ stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
 ```
 
 # Comparing ANCOVA in original study with reanalysis
-## Independant variable
+## Independent variable
 ```{r}
 tab.IV = rbind(stats.orig.IV, stats.rep.IV)
 rownames(tab.IV) = c("original Study", "reanalysis")

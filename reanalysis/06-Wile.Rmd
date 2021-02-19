@@ -50,7 +50,7 @@ data$Group.factor = factor(data$Group.factor,
 
 # Descriptives
 ## Dependant variable
-Number of samples and mean (SD) in levels of the independant variables. We reproduce Table 3 and Figure 2A of the study.
+Number of samples and mean (SD) in levels of the independent variables. We reproduce Table 3 and Figure 2A of the study.
 ```{r}
 idx = c(1, 3, 2, 4) # sorting as in publication
 tab.dv = array(NA, dim=c(4,3))
@@ -141,7 +141,7 @@ stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
 ```
 
 # Comparing ANCOVA in original study with reanalysis
-## Independant variable
+## Independent variable
 ```{r}
 tab.IV = rbind(stats.orig.IV, stats.rep.IV)
 rownames(tab.IV) = c("original Study", "reanalysis")
