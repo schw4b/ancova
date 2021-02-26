@@ -2,8 +2,6 @@
 .Rproj
 docs/*
 *.png
-Presentations/figure/*
-Presentations/*.pdf
 report/*.swp
 *.xlsx
 *.sav
@@ -15,5 +13,4 @@ dataPrimaryStudies
 dataPrimaryStudies*.zip
 results/data
 .Rproj.user
-temp
 .Rhistory
