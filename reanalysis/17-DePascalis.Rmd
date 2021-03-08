@@ -83,6 +83,7 @@ p3 = ggplot(d.3, aes(y=amplitude, x=site, color=site)) +
 
 plot_grid(p1, p2, p3, nrow = 1, ncol = 3)
 ```
+
 ### Interaction effects (two-way)
 Averaging subjects across along the third factor to see the two-way interactions. Plots show means (SD as error bar)
 ```{r fig.height=2, fig.width=11}
