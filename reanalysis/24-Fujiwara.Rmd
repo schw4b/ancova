@@ -1,261 +1,299 @@
 ---
-title: "24-Fujiwara"
-author: "Audrey Yeo^[University of Zurich, audrey.yeo@uzh.ch]"
+title: "Reanalysis of 24-Fujiwara"
+author: 
+- Audrey Yeo^[University of Zurich, audrey.yeo@uzh.ch]
+- Simon Schwab^[University of Zurich, simon.schwab@uzh.ch]
 date: "01/06/2020"
 output: pdf_document
 toc: true
 ---
 
 # Reference
-Fujiwara, E. (2018). Looking at the eyes interferes with facial emotion recognition in alexithymia. *Journal of Abnormal Psychology*, 127(6), 571-577. https://doi.org/10.1037/abn0000361
+Fujiwara, E. (2018). Looking at the eyes interferes with facial emotion recognition in alexithymia. Journal of Abnormal Psychology, 127(6), 571–577. https://doi.org/10.1037/abn0000361
 
 ```{r, include=FALSE}
 # install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
 library(biostatUZH)
-library(foreign) # for spss
+library(car)
+library(readxl)
+library(foreign)
+library(readxl)
 library(ggplot2)
-library(car) # for Anova
 library(cowplot)
+library(ez)
 ```
 
 # Notes from reading methods section
 This study assessed the two Alexithymic groups, high and low, with the individuals' ability to identify clear and ambiguous blends of emotions in faces and their underlying visual attention patterns. Using the Toronto Alexithymia Scale, students with high alexithymia (HA, n = 73) or low alexithymia (LA, n = 76) were enrolled in this study. 
-* Dependant variable: DEV (combination)
-* Independant variable: TAS_group (high or low Alexithymia score), Emotion (6 levels), Ambiguity (2 levels)
-* Covariate: 
-  * DASS_tot (Depression, Anxiety and Stress total scores or DASS-21)
-  * log_lat (log transformed response time)
+* Dependant variable: deviance score
+* Independent variables: 
+  * 2 levels ambiguity (clear vs. ambiguous emotional blends in the target face)
+  * 6 levels of emotion (anger, disgust, fear, happiness, sadness, surprise is dominant emotion)
+  * 2 groups (HA, LA; high and low Alexithymia score)
+* Covariate:
+  * DASS-21 (Depression, Anxiety and Stress total score)
+  * Maybe log transformed response times were also used as covariate
+* Design: 2 (w) x 6 (w) x 2 (b) mixed ANCOVA (w within; b between)
 
 # Reading data
 Data is loaded, reshaped into long form, and factors are specified.
 ```{r, echo = FALSE}
-# PATH = file.path(path.expand("~"), "Desktop", "CRS") # ancova project folder
-# PATH1 = file.path(PATH, "dataPrimaryStudies", "24-Fujiwara", "24-Fujiwara-1.sav")
-# spss_data <- file.choose(PATH1)
-# spss_data <- read.spss(spss_data, to.data.frame = TRUE) # external window opens for this
-# data <- spss_data
-# save(data, file = "../dataPrimaryStudies/24-Fujiwara/24-Fujiwara.rda") # easier to call
-load("../../ancova/dataPrimaryStudies/24-Fujiwara/24-Fujiwara.rda")
+PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
+data.orig = read_excel(file.path(PATH, "dataPrimaryStudies", "24-Fujiwara", "FujiwaraJAbnorm2019_data.xlsx"))
 
-longdata = data.frame(dev = c(data.matrix(data[,4:15])))
-longdata$id = as.factor(rep(1:149, 12))
-longdata$TAS_group = as.factor(rep(data$TAS_group, 12))
-longdata$TAS_group = factor(longdata$TAS_group, levels = c("No Alexithymia", "High Alexithymia"), ordered =TRUE)
-longdata$amb = as.factor(c(rep("clear", 149*6), rep("ambigious", 149*6)))
-longdata$emo = as.factor(c(rep("anger", 149), rep("disgust",149), rep("fear",149), rep("happiness", 149), rep( "sadness", 149), rep("surprise", 149)))
-longdata$dass = rep(data$DASS_tot, 12)
-longdata$time = rep(data$log_lat, 12)
+# convert to long format
+N = 73 + 76
+k = 6 * 2
+data = data.frame(id = rep(1:N, 12))
+data$dev = c(data.matrix(data.orig[,4:15]))
+data$emo = c(rep("anger", N), rep("disgust", N), rep("fear", N), 
+             rep("happiness", N), rep( "sadness", N), rep("surprise", N))
+data$amb = c(rep("clear", N*6), rep("ambigious", N*6))
+data$TAS_group = rep(data.orig$TAS_group, k)
+data$DASS_tot = rep(data.orig$DASS_tot, k)
+data$log_lat = rep(data.orig$log_lat, k)
+
+# add group variable which is more informative
+data$group = NA
+data$group[data$TAS_group == 1] = "Low Alexithymia"
+data$group[data$TAS_group == 3] = "High Alexithymia"
+
+data$id = as.factor(data$id)
+data$emo = as.factor(data$emo)
+data$amb = as.factor(data$amb)
+data$group = as.factor(data$group)
+
+# order level of emotions from low to high avergae ambiguity
+tmp = aggregate(dev ~ emo, data = data, FUN = mean)
+myLevels = tmp$emo[order(tmp$dev)]
+data$emo = factor(data$emo, levels = myLevels)
+
+summary(data)
 ```
 
 # Descriptives
 ## Dependant variable
-Number of samples and mean (SD) in levels of the independant variables. We reproduce Table 3 and Figure 2A of the study.
-```{r}
-idx = c(1, 3, 2, 4) # sorting as in publication
-tab.dv = array(NA, dim=c(2,3))
-tab.dv[,1] = levels(longdata$TAS_group)
-tab.dv[,2] = summary(longdata$TAS_group)
-tab.dv[,3] = tapply(longdata$dev, longdata$TAS_group, 
-                  function (x) sprintf("%0.2f (%0.2f)", mean(x), sd(x)))
-colnames(tab.dv) = c("group", "n", "mean (SD)")
-print(tab.dv)
-```
+Number of samples and mean (SD) in levels of the independent variables. We reproduce Table 3 and Figure 2A of the study.
+```{r fig.height=2, fig.width=11}
+d.1 = aggregate(dev ~ DASS_tot + log_lat + id*group, data = data, FUN = mean)
+d.2 = aggregate(dev ~ DASS_tot + log_lat + id*emo, data = data, FUN = mean)
+d.3 = aggregate(dev ~ DASS_tot + log_lat + id*amb, data = data, FUN = mean)
 
-```{r fig.height=2, fig.width=3.5}
-ggplot(longdata, aes(y=dev, x=TAS_group, color=TAS_group)) +
+p1 = ggplot(d.1, aes(y=dev, x=group, color=group)) +
   geom_boxplot() +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
-  theme_minimal() +
-  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("group") + ylab("anger score") + ggtitle("Dependant variable")
+  theme_minimal() + theme(axis.text.x = element_blank())
+
+p2 = ggplot(d.2, aes(y=dev, x=emo, color=emo)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() + theme(axis.text.x = element_blank())
+
+p3 = ggplot(d.3, aes(y=dev, x=amb, color=amb)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+ theme_minimal() + theme(axis.text.x = element_blank())
+
+plot_grid(p1, p2, p3, nrow = 1, ncol = 3)
+```
+Averaging subjects across along the third factor to see the two-way interactions. Plots show means (95%-CI as error bar)
+```{r fig.height=2, fig.width=11}
+d.A = aggregate(dev ~ group*emo, data = data, FUN = mean)
+d.B = aggregate(dev ~ group*amb, data = data, FUN = mean)
+d.C = aggregate(dev ~ emo*amb, data = data, FUN = mean)
+
+# get SD
+d.A$sd = aggregate(dev ~ group*emo, data = data, FUN = sd)[,3]
+d.A$se = d.A$sd/sqrt(rep(c(73, 76), 6))
+
+d.B$sd = aggregate(dev ~ group*amb, data = data, FUN = sd)[,3]
+d.B$se = d.B$sd/sqrt(rep(c(73, 76), 2))
+
+d.C$sd = aggregate(dev ~ emo*amb, data = data, FUN = sd)[,3]
+d.C$se = d.C$sd/sqrt(rep(N, 12))
+
+pA = ggplot(d.A, aes(y=dev, x=emo, group=group, color=group)) +
+  geom_errorbar(aes(ymin=dev-1.96*se, ymax=dev+1.96*se), width=.2) +
+  geom_line() + geom_point() +
+  theme_minimal() + theme(axis.text.x = element_text(angle = 20) )
+
+pB = ggplot(d.B, aes(y=dev, x=amb, group=group, color=group)) +
+  geom_errorbar(aes(ymin=dev-1.96*se, ymax=dev+1.96*se), width=.2) +
+  geom_line() + geom_point() +
+  theme_minimal()
+
+pC = ggplot(d.C, aes(y=dev, x=emo, group=amb, color=amb)) +
+  geom_errorbar(aes(ymin=dev-1.96*se, ymax=dev+1.96*se), width=.2) +
+  geom_line() + geom_point() +
+  theme_minimal() + theme(axis.text.x = element_text(angle = 20))
+
+plot_grid(pA, pB, pC, nrow = 1, ncol = 3)
 ```
 
 ## Covariate(s)
 The two covariates are DASS_tot scores and log of time.
-```{r}
-#idx = c(1, 3, 2, 4) # sorting as in publication
-tab.cv = array(NA, dim=c(2,3))
-tab.cv[,1] = levels(longdata$TAS_group)
-tab.cv[,2] = summary(longdata$TAS_group)
-tab.cv[,3] = tapply(longdata$dass, longdata$TAS_group, 
-                  function (x) sprintf("%0.1f (%0.1f)", mean(x), sd(x)))
-colnames(tab.cv) = c("group", "n", "mean of DASS (SD)")
-tab.cv1 = tab.cv
-print(tab.cv1)
-```
+```{r fig.height=2, fig.width=8}
+p1 = ggplot(d.1, aes(y=DASS_tot, x=group, color=group)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+ theme_minimal() + theme(axis.text.x = element_blank())
 
-```{r }
-p1 = ggplot(longdata, aes(y=dass, x=TAS_group, color=TAS_group)) +
+p2 = ggplot(d.1, aes(y=log_lat, x=group, color=group)) +
   geom_boxplot() +
   geom_point(position = position_jitter(width = 0.15, height = 0)) +
-  theme_minimal() +
-  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("group") + ylab("DASS scores") + ggtitle("Covariate")
-p2 = ggplot(longdata, aes(y=time, x=TAS_group, color=TAS_group)) +
-  geom_boxplot() +
-  geom_point(position = position_jitter(width = 0.15, height = 0)) +
-  theme_minimal() +
-  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
-  xlab("group") + ylab("log time (millisec)") + ggtitle("Covariate")
+ theme_minimal() + theme(axis.text.x = element_blank())
+
 plot_grid(p1, p2, nrow = 1, ncol = 2)
-```
-Covariate log of time's mean and standard deviation
-```{r}
-idx = c(1, 3, 2, 4) # sorting as in publication
-tab.cv = array(NA, dim=c(2,3))
-tab.cv[,1] = levels(longdata$TAS_group)
-tab.cv[,2] = summary(longdata$TAS_group)
-tab.cv[,3] = tapply(longdata$time, longdata$TAS_group, 
-                  function (x) sprintf("%0.1f (%0.1f)", mean(x), sd(x)))
-colnames(tab.cv) = c("group", "n", "mean of log time (SD)")
-tab.cv2 = tab.cv
-print(tab.cv2)
 ```
 
 # Main analysis ANCOVA
-Independant variable: TAS_group (Between Group)
+Independent variable: TAS_group (Between Group)
 ```{r, include=FALSE}
-stats.orig.IV1 = data.frame(
-  Fvalue =  0.83,
+stats.orig.IV.amb = data.frame(
+  Fvalue =  4.67,
   df1 = 1,
   df2 = 145,
-  pvalue = "0.57")
-```
-Independant variable: Ambiguity
-```{r, include=FALSE}
-stats.orig.IV2 = data.frame(
-  Fvalue =  33.07,
-  df1 = 1,
-  df2 = 146,
-  pvalue = "<0.001")
-```
+  pvalue = 0.03)
 
-Independant variable: Emotion
-```{r, include=FALSE}
-stats.orig.IV3 = data.frame(
-  Fvalue =  4.75,
-  df1 = 4.72,
-  df2 = 689.06,
-  pvalue = "<0.001")
+stats.orig.IV.emoXamb = data.frame(
+  Fvalue =  2.61,
+  df1 = 4.21,
+  df2 = 610.65,
+  pvalue = 0.03)
 ```
-
 
 ```{r}
 # Orthogonal contrasts
-contrasts(longdata$TAS_group) = contr.helmert(2) 
-contrasts(longdata$amb) = contr.helmert(2) 
-contrasts(longdata$emo) = contr.helmert(6) 
+contrasts(data$group) = contr.helmert(2)
+contrasts(data$amb) = contr.helmert(2) 
+contrasts(data$emo) = contr.helmert(6) 
 
-#aov(dev ~ time + dass + group*emo*amb + Error(id/(emo*amb)) + TAS_group, data = longdata)
-
-fit.ancova = aov(dev ~ time + dass + TAS_group*emo*amb, data = longdata)
-result = Anova(fit.ancova, type = "III")
+fit.ancova = aov(dev ~ log_lat + DASS_tot + (group*emo*amb) + Error(id/(emo*amb)) + group, 
+                 data = data)
+result = summary(fit.ancova) # Type I
 print(result)
 ```
 
+```{r}
+fit2.ancova = ezANOVA(dv = .(dev), wid = .(id), between = .(group), within = .(emo, amb),
+                      within_covariates = .(DASS_tot, log_lat), type=3, detailed=TRUE,  data = data)
+print(fit2.ancova)
+```
+
 ```{r, include=FALSE}
-stats.rep.IV1 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[4]),
-                          df1 = result$Df[4],
-                          df2 = result$Df[11],
-                          pvalue = formatPval(result$`Pr(>F)`[4]))
+stats.rep.IV.amb = data.frame(Fvalue = sprintf("%.2f",result$`Error: id:amb`[[1]]$`F value`[1]),
+                              df1 = result$`Error: id:amb`[[1]]$Df[1],
+                              df2 = result$`Error: id:amb`[[1]]$Df[3],
+                              pvalue = formatPval(result$`Error: id:amb`[[1]]$`Pr(>F)`[1])
+)
 
-stats.rep.IV2 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[5]),
-                          df1 = result$Df[5],
-                          df2 = result$Df[11],
-                          pvalue = formatPval(result$`Pr(>F)`[5]))
+stats.rep.IV.emoXamb = data.frame(Fvalue = sprintf("%.2f",result$`Error: id:emo:amb`[[1]]$`F value`[1]),
+                                  df1 = result$`Error: id:emo:amb`[[1]]$Df[1],
+                                  df2 = result$`Error: id:emo:amb`[[1]]$Df[3],
+                                  pvalue = formatPval(result$`Error: id:emo:amb`[[1]]$`Pr(>F)`[1])
+)
 
-stats.rep.IV3 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[6]),
-                          df1 = result$Df[6],
-                          df2 = result$Df[11],
-                          pvalue = formatPval(result$`Pr(>F)`[6]))
+# ezANOVA with type 3 SS
+stats.rep2.IV.amb = data.frame(Fvalue = sprintf("%.2f",fit2.ancova$ANOVA$F[4]),
+                              df1 = fit2.ancova$ANOVA$DFn[4],
+                              df2 = fit2.ancova$ANOVA$DFd[4],
+                              pvalue = formatPval(fit2.ancova$ANOVA$p[4])
+)
 
-
+stats.rep2.IV.emoXamb = data.frame(Fvalue = sprintf("%.2f",fit2.ancova$ANOVA$F[7]),
+                              df1 = fit2.ancova$ANOVA$DFn[7],
+                              df2 = fit2.ancova$ANOVA$DFd[7],
+                              pvalue = formatPval(fit2.ancova$ANOVA$p[7])
+)
 ```
 
 # Comparing ANCOVA in original study with reanalysis
 ## Independant variable
 
+Main effect ambiguity
 ```{r}
-tab.IV = rbind(stats.orig.IV1, stats.rep.IV1, stats.orig.IV2, stats.rep.IV2,   stats.orig.IV3, stats.rep.IV3)
-rownames(tab.IV) = c("orig TAS_group", "reanalysis TAS_group", "orig Ambiguity", "reanalysis Ambiguity", "orig Emotion", "reanalysis Emotion")
+tab.IV = rbind(stats.orig.IV.amb, stats.rep.IV.amb, stats.rep2.IV.amb)
+rownames(tab.IV) = c("original Study", "reanalysis type I SS", "reanalysis type II SS")
 print(t(tab.IV))
 ```
 
-## Covariate
+Interaction ambiguity x emotion
 ```{r}
-stats.orig.CV1 = data.frame(
-  Fvalue =  NA,
-  df1 = NA,
-  df2 = NA,
-  pvalue = NA)
-stats.orig.CV2 = stats.orig.CV1
-stats.rep.CV1 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[1]),
-                          df1 = result$Df[1],
-                          df2 = result$Df[11],
-                          pvalue = formatPval(result$`Pr(>F)`[1]))
-
-stats.rep.CV2 = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
-                          df1 = result$Df[2],
-                          df2 = result$Df[11],
-                          pvalue = formatPval(result$`Pr(>F)`[2]))
-tab.CV = rbind(stats.orig.CV1, stats.orig.CV2, stats.rep.CV1, stats.rep.CV2)
-rownames(tab.CV) = c("original Study COV : Time", "original Study COV: DASS", "reanalysis of COV : Time", "reanalysis of COV : DASS")
-print(t(tab.CV))
+tab.IV = rbind(stats.orig.IV.emoXamb, stats.rep.IV.emoXamb, stats.rep2.IV.emoXamb)
+rownames(tab.IV) = c("original Study", "reanalysis type I SS", "reanalysis type II SS")
+print(t(tab.IV))
 ```
 
 # Assumptions
 ## 1.  Homogeneity of variance
-There is a similar standard deviation between groups. There is no evidence of significance that there is no homogeneity of variance. F statistic shows evidence of significance.
+* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
+* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
+* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
 ```{r}
-tapply(longdata$dass, longdata$TAS_group, sd)
-leveneTest(dass ~ TAS_group, data = longdata)
+tapply(d.1$dev, d.1$group, sd)
+leveneTest(dev ~ group, data = d.1)
 ```
 
 
 ## 2.  Independence between covariate and IV.
-There is no evidence of significance, that groups differ in their DASS_total scores but marginal evidence that groups differ with log of time). Thus, these covariate is appropriate for this analysis.
+When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
+
+We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
 ```{r}
-fit.cv1 = aov(longdata$dass ~ TAS_group, data = longdata) 
+fit.cv1 = aov(DASS_tot ~ group, data = d.1) 
 summary(fit.cv1)
 
-fit.cv2 = aov(longdata$time ~ TAS_group, data = longdata) 
+fit.cv2 = aov(log_lat ~ group, data = d.1) 
 summary(fit.cv2)
 ```
 
 
 ## 3. Homogeneity of regression slopes
-There is no evidence of significance that groups interact with DASS scores, neither does group interact with time, this is confirmed on visual inspection. This there is evidence of homogeneity of regression slopes for the DASS and time variables.
 ```{r}
-fit.hrs = aov(dev ~ dass*TAS_group, data = longdata)
+fit.hrs = aov(dev ~ DASS_tot*group, data = d.1)
 Anova(fit.hrs, type = "III") 
-
-fit.hrs = aov(dev ~ time*TAS_group, data = longdata)
-Anova(fit.hrs, type="III")
 ```
 
-```{r }
-p1 = ggplot(longdata, aes(y=dev, x=time, color = TAS_group, shape= TAS_group)) +
+```{r fig.height=2, fig.width=3.5}
+ggplot(d.1, aes(y=dev, x=DASS_tot, color=group, shape=group)) +
   geom_point() +
-  geom_smooth(formula = y ~ x, method=lm, se=FALSE, fullrange=TRUE) +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
   theme_minimal() +
-  theme(legend.title = element_blank()) +
-  xlab("Time") + ylab("Deviance scores")
-
-p2 = ggplot(longdata, aes(y=dev, x=dass, color = TAS_group, shape= TAS_group)) +
-  geom_point() +
-  geom_smooth(formula = y ~ x, method=lm, se=FALSE, fullrange=TRUE) +
-  theme_minimal() +
-  theme(legend.title = element_blank()) +
-  xlab("DASS-21 score") + ylab("Deviance scores")
-
-plot_grid(p1, p2, nrow = 1, ncol = 2)
+  theme(legend.title = element_blank())
 ```
 
+```{r}
+fit.hrs = aov(dev ~ DASS_tot*emo + Error(id/emo), data = d.2)
+summary(fit.hrs)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(d.2, aes(y=dev, x=DASS_tot, color=emo, shape=emo)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+```
+
+```{r}
+fit.hrs = aov(dev ~ DASS_tot*amb + Error(id/amb), data = d.3)
+summary(fit.hrs)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(d.3, aes(y=dev, x=DASS_tot, color=amb, shape=amb)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+```
 
 # Notes
+* Log transform of outcome could have been considered.
+* Not all main effects and interactions were reported.
+* Could not numerically reproduce the two reported results, but conclusions remain the same.
+* Homogeneity of variances was met for groups.
+* Independence between covariate DASS_tot and the IV group was not met.
+* Homogeneity of regression slopes was met for group and emotion, but not across levels of ambiguity.
 
-<!-- * The first reported ANCOVA which was n.s. was reproduced --> -->
-* Assumptions were met for ancova analysis except homogeneity of variance.
-* Non-significant results were found in reanalysis
-* The effect of Ambiguity had evidence of significant, with the main effects being very similar (23.19 in original student and 33.07 in reanalysis). The effect of Emotion has evidence of significance, though the effect is largely dissimilar. 
 Data was analyzed according to recommendations by Field, Miles, & Field (2012).
