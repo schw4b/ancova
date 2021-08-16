@@ -1,5 +1,5 @@
 ---
-title: "30-Hasan et al"
+title: "Reanalysis of 30-Hasan"
 author: "Audrey Yeo^[University of Zurich, audrey.yeo@uzh.ch]"
 date: "01/06/2020"
 output: pdf_document
@@ -7,9 +7,7 @@ toc: true
 ---
 
 # Reference
-Hasan et al (2017). Structural brain changes are associated with response of
-negative symptoms to prefrontal repetitive transcranial
-magnetic stimulation in patients with schizophrenia *Molecular Psychiatry* (2017) 22, 857–864. https://doi.org/10.1038/mp.2016.161
+Hasan, A., Wobrock, T., Guse, B., Langguth, B., Landgrebe, M., Eichhammer, P., Frank, E., Cordes, J., Wölwer, W., Musso, F., Winterer, G., Gaebel, W., Hajak, G., Ohmann, C., Verde, P. E., Rietschel, M., Ahmed, R., Honer, W. G., Dechent, P., … Koutsouleris, N. (2017). Structural brain changes are associated with response of negative symptoms to prefrontal repetitive transcranial magnetic stimulation in patients with schizophrenia. Molecular Psychiatry, 22(6), 857–864. https://doi.org/10.1038/mp.2016.161
 
 ```{r, include=FALSE}
 # install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
@@ -22,28 +20,29 @@ library(ggplot2)
 ```
 
 # Notes from reading methods section
-The aim of the study was to determine whether negative symptom improvement in schizophrenia patients receiving rTMS (Treatment_Group = "Verum" versus "Sham") to the left dorsolateral prefrontal cortex (DLPFC) was related to brain volume changes. A total of 73 patients with schizoprenia and predominant negative symptoms were randomized to an active (n = 34) or sham (n = 39) rTMS intervention applied 5 days per week for 3 weeks to the left DLPFC.
+The aim of the study was to determine whether negative symptom improvement in schizophrenia patients receiving rTMS to the left dorsolateral prefrontal cortex (DLPFC) was related to brain volume changes. A total of 73 patients with schizophrenia and predominant negative symptoms were randomized to an active (n = 34) or sham (n = 39) rTMS intervention applied 5 days per week for 3 weeks to the left DLPFC.
+
 * Dependant variable: D_V_REL_Cluster1 or "brain volume changes"
-* Independant variable: Treatment_Group 
-* Covariate: "PANSS-NS%" or "negative symptom improvement"
+* Independent variable: Treatment_Group, active (n = 34) vs. sham (n = 39)
+* Covariate: "PANSS-NS%" (relative negative symptom improvement)
 
 # Reading data
 Data is loaded, reshaped if necessary, and factors are specified.
 ```{r, echo = FALSE}
-PATH = file.path(path.expand("~"), "CRS", "ancova") # ancova project folder
-# I created the .rda file with the following code, so it requires just to be loaded
-# data = read_spss(file.path(PATH, "dataPrimaryStudies", "30-Hasan", "30-Hasan.sav"))
-# PATH1 = file.path(PATH, "dataPrimaryStudies", "30-Hasan", "30-Hasan.sav")
-# spss_data <- file.choose(PATH1)
-# spss_data <- read.spss(spss_data, to.data.frame = TRUE)
-# data <- spss_data
-# save(data, file = "Desktop/CRS/ancova/dataPrimaryStudies/30-Hasan/30-Hasan.rda")
-load("../../ancova/dataPrimaryStudies/30-Hasan/30-Hasan.rda")
+PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
+data = read.spss(file.path(PATH, "dataPrimaryStudies", "30-Hasan", "30-Hasan.sav"),
+                      to.data.frame = TRUE)
+N = 34 + 39
+
+data$Subject_Number = as.factor(data$Subject_Number)
+data$Site = as.factor(data$Site)
+
+summary(data)
 ```
 
 # Descriptives
 ## Dependant variable
-The relationship between DV and IV. The means per treatment group are quite similar but not the same, see also following boxplot.
+The relationship between DV and IV.
 ```{r}
 # idx = c(1, 3, 2, 4) # sorting as in publication
 tab.dv = array(NA, dim=c(2,3))
@@ -65,7 +64,6 @@ ggplot(data, aes(y=D_V_REL_Cluster1, x=Treatment_Group, color=Treatment_Group)) 
 ```
 
 ## Covariate(s)
-The means of covariates vary marginally with large standard errors, also see boxplot.
 ```{r}
 # idx = c(1, 3, 2, 4) # sorting as in publication
 tab.cv = array(NA, dim=c(2,3))
@@ -101,35 +99,42 @@ stats.orig.CV = data.frame(
   df1 = 3,
   df2 = 67,
   pvalue = 0.001)
-# main effect of covariate and treamtnet group interaction F(3,67) = 7.24, p < 0.0005)
+# main effect of covariate and treatment group interaction F(3,67) = 7.24, p < 0.0005)
 stats.orig.int = data.frame(
   Fvalue =  7.24,
   df1 = 3,
   df2 = 67,
-  pvalue = "<0.0005")
+  pvalue = "< 0.0005")
 ```
 
 
 ```{r}
-contrasts(data$Treatment_Group) = contr.helmert(2) 
+contrasts(data$Treatment_Group) = contr.helmert(2)
 
-fit.ancova = aov(D_V_REL_Cluster1 ~ Treatment_Group + D_PANSS_NS_REL , data = data)
-# result = summary(fit) # Type I
+fit.ancova = manova(cbind(D_V_REL_Cluster1, D_V_REL_Cluster2, D_V_REL_Cluster3) ~ Treatment_Group * D_PANSS_NS_REL, data = data)
+
 result = Anova(fit.ancova, type=3) # Type III
 print(result)
 ```
 
 ```{r, include=FALSE}
-stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
-                          df1 = result$Df[3],
-                          df2 = result$Df[4],
-                          pvalue = formatPval(result$`Pr(>F)`[3])
+# I have some trouble extracting values from manova object, so I do it manually.
+stats.rep.IV = data.frame(Fvalue = sprintf("%.3f", 0.0204),
+                          df1 = 3,
+                          df2 = 67,
+                          pvalue = 0.996
 )
 
-stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
-                          df1 = result$Df[2],
-                          df2 = result$Df[4],
-                          pvalue = formatPval(result$`Pr(>F)`[2])
+stats.rep.CV = data.frame(Fvalue = sprintf("%.2f", 5.8572),
+                          df1 = 3,
+                          df2 = 67,
+                          pvalue =formatPval(0.0012952)
+)
+
+stats.rep.inter = data.frame(Fvalue = sprintf("%.2f", 7.2350),
+                          df1 = 3,
+                          df2 = 67,
+                          pvalue =formatPval(0.0002816)
 )
 ```
 
@@ -148,14 +153,21 @@ rownames(tab.CV) = c("original Study", "reanalysis")
 print(t(tab.CV))
 ```
 
+## Interaction
+```{r}
+tab.CV = rbind(stats.orig.int, stats.rep.inter)
+rownames(tab.CV) = c("original Study", "reanalysis")
+print(t(tab.CV))
+```
+
 # Assumptions
 ## 1.  Homogeneity of variance
 * ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
 * When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
 * Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
 ```{r}
-tapply(data$D_V_REL_Cluster1, data$Treatment_Group, sd) # sd are similar
-leveneTest(D_V_REL_Cluster1 ~ data$Treatment_Group, data = data) # P(>F) is 0.5283, there is homogeneity of variabcce
+tapply(data$D_V_REL_Cluster1, data$Treatment_Group, sd)
+leveneTest(D_V_REL_Cluster1 ~ data$Treatment_Group, data = data)
 ```
 
 
@@ -164,44 +176,22 @@ When the covariate and the experimental effect (independent variable) are not in
 
 We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
 
-In this reanalysis, there is independance between CV and IV
+In this reanalysis, there is independence between CV and IV
 ```{r}
 fit.cv = aov(data$D_PANSS_NS_REL ~ data$Treatment_Group, data = data) 
-summary(fit.cv)
+Anova(fit.cv, type=3)
 ```
 
 
 ## 3. Homogeneity of regression slopes
-The slopes are not parallel with each treatment group.
-```{r}
-fit.hrs = aov(data$D_V_REL_Cluster1 ~  D_PANSS_NS_REL*Treatment_Group, data = data)
-Anova(fit.hrs, type=3)
-```
+In the current study, the covariate was included as an interaction term, and not as a "global" covariate. This is exactly, how one would test HRS. Therefore, to test HRS is not necessary here and it is fair to say the assumption was met.
 
-```{r fig.height=2, fig.width=3.5}
-ggplot(data, aes(y=D_V_REL_Cluster1, x=D_PANSS_NS_REL, color=Treatment_Group, shape=Treatment_Group)) +
-  geom_point() +
-  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
-  theme_minimal() +
-  theme(legend.title = element_blank()) +
-  xlab("Symptom scoring") + ylab("Volume changes")
-```
-
-
-# Additional analyses: MANCOVA
-The paper performed four ANCOVAs for each dependant variable
-```{r}
-fit = manova(cbind(data$D_V_REL_Cluster1, 
-                   data$D_V_REL_Cluster2, data$D_V_REL_Cluster3) ~ 
-               Treatment_Group + D_PANSS_NS_REL,
-             data=data)
-summary(fit)
-```
 
 # Notes
 
-* The first reported ANCOVA which was n.s. was reproduced
-* p-value was reported
-* Assumptions were met, except homogeneity of regression slopes showing a different relationship of outcome and covariate between the two groups
+* The study reported a MANCOVA as there were three outcome variables
+* The MANCOVA results (effect of treatment, covariate and interaction) were fully reproduced.
+* Assumptions were all met. Homogeneity of regression slopes was not required to assess as the covariate was included as an interaction term with the treatment.
+* The authors provided SPSS analysis script code, which helped to understand that the covariate was used in an interaction term and not a a global covariate.
 
 Data was analyzed according to recommendations by Field, Miles, & Field (2012).
