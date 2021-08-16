@@ -213,14 +213,14 @@ stats.rep2.IV.emoXamb = data.frame(Fvalue = sprintf("%.2f",fit2.ancova$ANOVA$F[7
 Main effect ambiguity
 ```{r}
 tab.IV = rbind(stats.orig.IV.amb, stats.rep.IV.amb, stats.rep2.IV.amb)
-rownames(tab.IV) = c("original Study", "reanalysis type I SS", "reanalysis type II SS")
+rownames(tab.IV) = c("original Study", "reanalysis type I SS", "reanalysis type III SS")
 print(t(tab.IV))
 ```
 
 Interaction ambiguity x emotion
 ```{r}
 tab.IV = rbind(stats.orig.IV.emoXamb, stats.rep.IV.emoXamb, stats.rep2.IV.emoXamb)
-rownames(tab.IV) = c("original Study", "reanalysis type I SS", "reanalysis type II SS")
+rownames(tab.IV) = c("original Study", "reanalysis type I SS", "reanalysis type III SS")
 print(t(tab.IV))
 ```
 
