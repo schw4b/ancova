@@ -1,0 +1,196 @@
+---
+title: "Reanalysis of 32-Dose"
+author: "Simon Schwab^[University of Zurich, simon.schwab@uzh.ch]"
+date: "18/08/2021"
+output: pdf_document
+toc: true
+---
+
+# Reference
+Dose, C., Hautmann, C., Buerger, M., Schuermann, S., Woitecki, K., & Doepfner, M. (2017). Telephone-assisted self-help for parents of children with attention-deficit/hyperactivity disorder who have residual functional impairment despite methylphenidate treatment: a randomized controlled trial. Journal of Child Psychology and Psychiatry, and Allied Disciplines, 58(6), 682–690. https://doi.org/10.1111/jcpp.12661
+
+```{r, include=FALSE}
+# install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
+library(biostatUZH)
+library(car)
+library(readxl)
+library(foreign)
+library(readxl)
+library(openxlsx)
+library(ggplot2)
+library(effects)
+library(metafor)
+```
+
+# Notes from reading methods section
+* Dependent variable: WFIRS-P (primary outcome)
+* Independent variable: treatment group
+  * TASH intervention (telephone assisted self-help, n=51) 
+  * Control group (routine care incl. medication, n=52)
+* Covariate: primary outcome at baseline
+* Design: 1-way ANCOVA with group as IV and outcome at baseline as covariate
+* Primary analysis was ITT
+
+# Reading data
+Data is loaded, reshaped if necessary, and factors are specified.
+```{r}
+PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
+data = read.spss(file.path(PATH, "dataPrimaryStudies", "32-Dose",
+                           "Dose_TASH Enhancement_Functional Impairment.sav"), 
+                 to.data.frame = TRUE)
+```
+
+# Descriptives
+## Dependent variable
+Mean (SD) of primary outcome per treatment arm. Compare to Table 1, WFIRS-P total score.
+```{r}
+tapply(data$WFIRS_total_t3, data$Condition, function (x) sprintf("%0.2f (%0.2f)", mean(x), sd(x)))
+```
+
+```{r, fig.height=2, fig.width=3.3}
+ggplot(data, aes(y=WFIRS_total_t3, x=Condition, color=Condition)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("treatment") + ylab("WFIRS-P") + ggtitle("Dependant variable")
+```
+
+## Covariate(s)
+```{r}
+tapply(data$WFIRS_total_t1, data$Condition, function (x) sprintf("%0.2f (%0.2f)", mean(x), sd(x)))
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=WFIRS_total_t1, x=Condition, color=Condition)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("treatment") + ylab("WFIRS-P (baseline)") + ggtitle("Covariate")
+```
+
+# Main analysis ANCOVA
+```{r, include=FALSE}
+stats.orig.IV = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = NA,
+  SMD = NA,
+  lowerCI = NA,
+  upperCI = NA)
+
+stats.orig.CV = stats.orig.IV
+
+# enter all results from primary study here
+stats.orig.IV$Fvalue = 1.09
+stats.orig.IV$df1 = 1
+stats.orig.IV$pvalue = 0.30
+stats.orig.IV$SMD = 0.29
+```
+
+```{r}
+# Orthogonal contrasts
+contrasts(data$Condition) = contr.helmert(2) 
+
+fit.ancova = aov(WFIRS_total_t3 ~ WFIRS_total_t1 + Condition, data = data)
+result = Anova(fit.ancova, type=3) # Type III
+print(result)
+```
+
+The paper calculated Cohens'd based on ANCOVA's adjusted means.
+```{r}
+n = summary(data$Condition)
+means.adj = effect("Condition", fit.ancova, se=T)
+sd = tapply(data$WFIRS_total_t1, data$Condition, sd) # authors took pooled SD from abseline!
+es = escalc(m1i = means.adj$fit[1], sd1i = sd[1], n1i = n[1],
+            m2i = means.adj$fit[2], sd2i = sd[2], n2i = n[2],
+            measure = "SMD")
+SMD = es$yi
+SE = sqrt(es$vi)
+#ci95 = c(MD - 1.96*SE, MD + 1.96*SE)
+# SE based on t-distribution because n1 and n2 < 60
+t = qt(.975, df= n[1] + n[2] - 2)
+ci95 = c(SMD - t*SE, SMD + t*SE)
+sprintf("%.2f (%.2f, %.2f)", SMD, ci95[1], ci95[2])
+```
+
+```{r, include=FALSE}
+stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
+                          df1 = result$Df[3],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[3]),
+                          SMD = sprintf("%.2f", SMD),
+                          lowerCI = sprintf("%.2f", ci95[1]),
+                          upperCI = sprintf("%.2f", ci95[2])
+)
+
+stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+                          df1 = result$Df[2],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[2]),
+                          SMD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+```
+
+# Comparing ANCOVA in original study with reanalysis
+## Independent variable
+```{r}
+tab.IV = rbind(stats.orig.IV, stats.rep.IV)
+rownames(tab.IV) = c("original Study", "reanalysis")
+print(t(tab.IV))
+```
+
+## Covariate
+```{r}
+tab.CV = rbind(stats.orig.CV, stats.rep.CV)
+rownames(tab.CV) = c("original Study", "reanalysis")
+print(t(tab.CV))
+```
+
+# Assumptions
+## 1.  Homogeneity of variance
+* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
+* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
+* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
+```{r}
+tapply(data$WFIRS_total_t3, data$Condition, sd)
+leveneTest(WFIRS_total_t3 ~ Condition, data = data)
+```
+
+
+## 2.  Independence between covariate and IV
+When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
+
+We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
+```{r}
+fit.cv = aov(WFIRS_total_t1 ~ Condition, data = data) 
+Anova(fit.cv, type=3)
+```
+
+
+## 3. Homogeneity of regression slopes
+```{r}
+fit.hrs = aov(WFIRS_total_t3 ~ WFIRS_total_t1*Condition, data = data)
+Anova(fit.hrs, type=3)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=WFIRS_total_t3, x=WFIRS_total_t1, color=Condition, shape=Condition)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  xlab("WFIRS-P at baseline") + ylab("WFIRS-P follow-up")
+```
+
+# Notes
+
+* RCT using ANCOVA to calculate adjusted means for the two groups (corrected for baseline WFIRS)
+* Main finding fully reproduced
+* All assumptions met (equal variances, independence of covariate and homogeneity of regression slopes)
+
+Data was analyzed according to recommendations by Field, Miles, & Field (2012).
