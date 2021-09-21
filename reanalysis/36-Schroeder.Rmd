@@ -7,7 +7,7 @@ toc: true
 ---
 
 # Reference
-Schröder, J., Berger, T., Meyer, B., Lutz, W., Späth, C., Michel, P., Rose, M., Hautzinger, M., Hohagen, F., Klein, J. P., & Moritz, S. (2018). Impact and change of attitudes toward Internet interventions within a randomized controlled trial on individuals with depression symptoms. *Depression and Anxiety*", 35(5), 421–430. https://doi.org/10.1002/da.22727
+Schröder, J., Berger, T., Meyer, B., Lutz, W., Späth, C., Michel, P., Rose, M., Hautzinger, M., Hohagen, F., Klein, J. P., & Moritz, S. (2018). Impact and change of attitudes toward Internet interventions within a randomized controlled trial on individuals with depression symptoms. *Depression and Anxiety*, 35(5), 421–430. https://doi.org/10.1002/da.22727
 
 ```{r, include=FALSE}
 # install.packages("biostatUZH", repos="http://R-Forge.R-project.org")

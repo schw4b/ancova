@@ -25,6 +25,7 @@ library(ez)
 
 # Notes from reading methods section
 This study assessed the two Alexithymic groups, high and low, with the individuals' ability to identify clear and ambiguous blends of emotions in faces and their underlying visual attention patterns. Using the Toronto Alexithymia Scale, students with high alexithymia (HA, n = 73) or low alexithymia (LA, n = 76) were enrolled in this study. 
+
 * Dependant variable: deviance score
 * Independent variables: 
   * 2 levels ambiguity (clear vs. ambiguous emotional blends in the target face)
@@ -294,6 +295,6 @@ ggplot(d.3, aes(y=dev, x=DASS_tot, color=amb, shape=amb)) +
 * Could not numerically reproduce the two reported results, but conclusions remain the same.
 * Homogeneity of variances was met for groups.
 * Independence between covariate DASS_tot and the IV group was not met.
-* Homogeneity of regression slopes was met for group and emotion, but not across levels of ambiguity.
+* Homogeneity of regression slopes was mostly met, i.e. for group and emotion, but not across levels of ambiguity (but only weak evidence of violation).
 
 Data was analyzed according to recommendations by Field, Miles, & Field (2012).
