@@ -1,0 +1,316 @@
+---
+title: "25-VanLeijsen"
+author: "Audrey Yeo & Simon Schwab^[University of Zurich, simon.schwab@uzh.ch]"
+date: "11/13/2019"
+output: pdf_document
+toc: true
+---
+
+# Reference
+Van Leijsen et al. (2017). Plasma AB (Amyloid-B) Levels and Severity and Progression of Small Vessel Disease. Stroke, 16(5), 351–359. https://doi.org/10.1161/STROKEAHA.117.019810
+
+```{r, include = FALSE}
+library(biostatUZH)
+library(car)
+library(readxl)
+library(foreign)
+library(readxl)
+library(ggplot2)
+library(cowplot)
+```
+
+# Notes from reading methods section
+
+* Dependant variable: AB38
+* The independant variables 
+  * presence of microbleeds (1 or more microbleeds (n = 81) vs no microbleed (n=406)
+  * presence of lacunes (1 or more lacunes (n = 132) vs no lacunes (n = 355)
+* Covariate: age, sex and hypertension, total brain volume
+
+```{r}
+stats.orig.IV = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = "<0.01") # for microbleed presence and for lacune presence groups
+  
+
+stats.orig.allCV =  data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = NA)
+```
+
+# Reading data
+Data is loaded, reshaped if necessary, and factors are specified.
+```{r}
+PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
+data = read_excel(file.path(PATH, "dataPrimaryStudies", "25-VanLeijsen", "25-VanLeijsen-1.xlsx"))
+data = data.frame(data)
+
+data$mb_presence_b.factor = NA
+data$mb_presence_b.factor[data$mb_presence_b == 1] = "microbleeds"
+data$mb_presence_b.factor[data$mb_presence_b == 0] = "no microbleeds"
+data$mb_presence_b.factor = as.factor(data$mb_presence_b.factor)
+
+data$lac_presence_b.factor = NA
+data$lac_presence_b.factor[data$lac_presence_b == 1] = "lacunes"
+data$lac_presence_b.factor[data$lac_presence_b == 0] = "no lacunes"
+data$lac_presence_b.factor = as.factor(data$lac_presence_b.factor)
+
+data$sex.factor = NA
+data$sex.factor[data$sex == 1] = "male"
+data$sex.factor[data$sex == 2] = "female"
+data$sex.factor = as.factor(data$sex.factor)
+
+data$hypertension.factor  = data$hypertension == 1
+
+# data$groups = as.factor(paste(data$mb_presence_b.factor, data$lac_presence_b.factor))
+```
+
+# Descriptives
+## Dependant variable
+Number of samples and mean (SD) in levels of the independent variables. We reproduce the mean and sd values of Table 2 of this study
+```{r}
+
+tab.dv = array(NA, dim=c(4,2))
+rownames(tab.dv) = c(rev(levels(data$mb_presence_b.factor)), rev(levels(data$lac_presence_b.factor)))
+colnames(tab.dv) = c("n", "mean (SD)")
+
+tab.dv[,1] = c(rev(summary(data$mb_presence_b.factor)),
+                 rev(summary(data$lac_presence_b.factor)))
+
+tab.dv[1,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 0]),
+                      sd(data$AB38[data$mb_presence_b == 0]))
+tab.dv[2,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$mb_presence_b == 1]),
+                      sd(data$AB38[data$mb_presence_b == 1]))
+
+tab.dv[3,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 0]),
+                      sd(data$AB38[data$lac_presence_b == 0]))
+tab.dv[4,2] = sprintf("%.1f (%.1f)", mean(data$AB38[data$lac_presence_b == 1]),
+                      sd(data$AB38[data$lac_presence_b == 1]))
+
+print(tab.dv)
+```
+
+```{r, fig.height=3, fig.width=4.5}
+p1 = ggplot(data, aes(y=AB38, x = mb_presence_b.factor, color = mb_presence_b.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha=0.2, col="gray70") +
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "none") +
+  ggtitle("Microbleed presence") + ylab("AB38 (pg/ml)")
+
+p2 = ggplot(data, aes(y=AB38, x = lac_presence_b.factor, color =lac_presence_b.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha=0.2, col="gray70") +
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "none") +
+  ggtitle("Lacune presence") + ylab("AB38 (pg/ml)") 
+
+plot_grid(p1, p2, nrow = 1, ncol = 2)
+```
+  
+## Covariates(s)
+### Age
+```{r, fig.height=3, fig.width=4.5}
+p1 = ggplot(data, aes(y=age, x = mb_presence_b.factor, color = mb_presence_b.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha=0.2, col="gray70") +
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "none") +
+  ggtitle("Microbleed presence") + ylab("age (years)")
+
+p2 = ggplot(data, aes(y=age, x = lac_presence_b.factor, color =lac_presence_b.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha=0.2, col="gray70") +
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "none") +
+  ggtitle("Lacune presence") + ylab("age (years)") 
+plot_grid(p1, p2, nrow = 1, ncol = 2)
+```
+
+### Sex
+```{r, fig.height=3, fig.width=4.5}
+tab = table(data$mb_presence_b.factor, data$sex.factor)
+prc = tab/rowSums(tab)
+tab[,1] = sprintf("%.1f%%", prc*100)[1:2]
+tab[,2] = sprintf("%.1f%%", prc*100)[3:4]
+print(tab)
+
+tab = table(data$lac_presence_b.factor, data$sex.factor)
+prc = tab/rowSums(tab)
+tab[,1] = sprintf("%.1f%%", prc*100)[1:2]
+tab[,2] = sprintf("%.1f%%", prc*100)[3:4]
+print(tab)
+```
+
+### Hypertension
+```{r, fig.height=3, fig.width=4.5}
+tab = table(data$mb_presence_b.factor, data$hypertension.factor)
+prc = tab/rowSums(tab)
+tab[,1] = sprintf("%.1f%%", prc*100)[1:2]
+tab[,2] = sprintf("%.1f%%", prc*100)[3:4]
+print(tab)
+
+tab = table(data$lac_presence_b.factor, data$hypertension.factor)
+prc = tab/rowSums(tab)
+tab[,1] = sprintf("%.1f%%", prc*100)[1:2]
+tab[,2] = sprintf("%.1f%%", prc*100)[3:4]
+print(tab)
+```
+
+### Total brain volume
+```{r, fig.height=3, fig.width=4.5}
+p1 = ggplot(data, aes(y=tbv_b, x = mb_presence_b.factor, color = mb_presence_b.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha=0.2, col="gray70") +
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "none") +
+  ggtitle("Microbleed presence") + ylab("total brain volume")
+
+p2 = ggplot(data, aes(y=tbv_b, x = lac_presence_b.factor, color =lac_presence_b.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0), alpha=0.2, col="gray70") +
+  theme_minimal() +
+  theme(legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "none") +
+  ggtitle("Lacune presence") + ylab("total brain volume") 
+plot_grid(p1, p2, nrow = 1, ncol = 2)
+```
+
+# Main analysis ANCOVA
+```{r, include=FALSE}
+stats.orig.IVmicrobleed = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = "n.s.")
+
+stats.orig.IVlacunes = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = "n.s.")
+``` 
+## What has been done in the paper (one-way analyses)
+```{r}
+# Orthogonal contrasts
+contrasts(data$mb_presence_b.factor) = contr.helmert(2) 
+contrasts(data$lac_presence_b.factor) = contr.helmert(2) 
+
+# unadjusted one-way (not appropriate but thats what has been done in the paper)
+fit.ancova= aov(AB38 ~ mb_presence_b.factor, data = data)
+Anova(fit.ancova, type = 3)
+fit.ancova= aov(AB38 ~ lac_presence_b.factor, data = data)
+Anova(fit.ancova, type = 3)
+
+# adjusted for all covariates
+fit.ancova = aov(AB40 ~ age + sex.factor + hypertension.factor +
+                   tbv_b + mb_presence_b.factor, data = data)
+Anova(fit.ancova, type = 3) # Type III
+
+fit.ancova = aov(AB40 ~ age + sex.factor + hypertension.factor +
+                   tbv_b + lac_presence_b.factor, data = data)
+Anova(fit.ancova, type = 3) # Type III
+```
+## What should have been done in the paper (two-way analysis)
+```{r}
+# Orthogonal contrasts
+contrasts(data$mb_presence_b.factor) = contr.helmert(2) 
+contrasts(data$lac_presence_b.factor) = contr.helmert(2) 
+
+# unadjusted
+fit.ancova= aov(AB38 ~ mb_presence_b.factor*lac_presence_b.factor, data = data)
+result = Anova(fit.ancova, type = 3) # Type III
+print(result)
+
+# adjusted for all covariates
+fit.ancova = aov(AB40 ~ age + sex.factor + hypertension.factor +
+                   tbv_b + mb_presence_b.factor*lac_presence_b.factor, data = data)
+result = Anova(fit.ancova, type = 3) # Type III
+print(result)
+```
+
+
+# Comparing ANCOVA in original study with reanalysis
+We skip this section as no p-values or test statistics are reported.
+
+# Assumptions
+## 1.  Homogeneity of variance
+* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
+* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
+* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
+* In this study, statistical descriptives show that the highest and lowest variances seem close. Also, there is homogeneity of variance as p values exceed 0.05 for the Levene's test
+```{r}
+tapply(data$AB38, data$mb_presence_b.factor, sd)
+leveneTest(AB38 ~ mb_presence_b.factor, data = data)
+
+tapply(data$AB38, data$lac_presence_b.factor, sd)
+leveneTest(AB38 ~ lac_presence_b.factor, data = data) 
+```
+## 2.  Independence between covariate and IV
+When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
+
+We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
+```{r}
+# Age
+fit.cv.age = aov(age ~ lac_presence_b + mb_presence_b, data = data) 
+Anova(fit.cv.age, type=3)
+
+# Sex
+fit.cv.sex = glm(sex.factor~ lac_presence_b + mb_presence_b, family = binomial, data = data) 
+Anova(fit.cv.sex, type=3)
+
+# Hypertension
+fit.cv.hypertension = glm(hypertension.factor ~ lac_presence_b + mb_presence_b, family = binomial, data = data) 
+Anova(fit.cv.hypertension, type=3)
+
+# Total brain volume
+fit.cv.tbw = aov(tbv_b ~ lac_presence_b + mb_presence_b, data = data) 
+Anova(fit.cv.tbw, type=3)
+```
+
+## 3. Homogeneity of regression slopes
+* We test the interaction between the IV and the CV
+```{r}
+# Age
+Anova(aov(AB38 ~ age*mb_presence_b.factor, data = data), type=3)
+Anova(aov(AB38 ~ age*lac_presence_b.factor, data = data), type=3)
+
+# Sex
+Anova(aov(AB38 ~ sex.factor*mb_presence_b.factor, data = data), type=3)
+Anova(aov(AB38 ~ sex.factor*lac_presence_b.factor, data = data), type=3)
+
+# Hypertenson
+Anova(aov(AB38 ~ hypertension.factor*mb_presence_b.factor, data = data), type=3)
+Anova(aov(AB38 ~ hypertension.factor*lac_presence_b.factor, data = data), type=3)
+
+
+# Total brain volume
+Anova(aov(AB38 ~ tbv_b*mb_presence_b.factor, data = data), type=3)
+Anova(aov(AB38 ~ tbv_b*lac_presence_b.factor, data = data), type=3)
+```
+
+# Notes
+
+* The authors performed both unadjusted (using ANOVA) and adjusted analyses (using ANCOVA).
+* We reproduced the effect of microbleeds and lacunes on ABeta38 using two one-ways ANOVAs.
+* However, the appropriate analysis would be a 2-way ANOVA and here only an effect of microbleeds was statistically significant.
+* We could not reproduce the result with ANCOVA with 4 covariates (named model 4). There was again an effect of microbleeds, but the paper reported it was not significant.
+* No exact p-values and no test statistics were reported.
+* Some assumptions were not met: three covariates age, hypertension and total brain volume were not independent from the group variable.
+
+Data was analyzed according to recommendations by Field, Miles, & Field (2012).

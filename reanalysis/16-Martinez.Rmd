@@ -1,0 +1,55 @@
+---
+title: "16-Martinez"
+author:
+- Audrey Yeo^[University of Zurich, audrey.yeo@uzh.ch]
+- Simon Schwab^[University of Zurich, simon.schwab@uzh.ch]
+date: "01/09/2020"
+output: pdf_document
+toc: true
+---
+
+# Reference
+Martinez, Q., Lebrun, R., Achmadi, A. S., Esselstyn, J. A., Evans, A. R., Heaney, L. R., Miguez, R. P., Rowe, K. C., & Fabre, P.-H. (2018). Convergent evolution of an extreme dietary specialisation, the olfactory system of worm-eating rodents. Scientific Reports, 8(1), 17806. https://doi.org/10.1038/s41598-018-35827-0
+
+```{r, include=FALSE}
+# install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
+library(biostatUZH)
+library(car)
+library(readxl)
+library(foreign)
+library(readxl)
+library(ggplot2)
+```
+
+# Notes from reading methods section
+This study scanned (X-ray) N=55 skulls from rodent species borrowed from various national history museums.
+
+* Dependant variable: resPGLS (Phylogenetic generalised least squares; a measure of how close different species are based on the DNA)
+* Independent variable: 
+  * Vermi
+  * Crani
+  * Omni
+* Covariate: ?
+
+# Authors wrote in email
+What we named Phylogenetic ANCOVA is a model fitting where we contrasted three models: a model without dietary categories (H0), a model with omnivorous and carnivorous dietary categories (Carni), and a model with omnivorous, carnivorous, and vermivorous dietary categories (Vermi). Models were compared using the Akaike information criterion (AIC) and the Likelihood-ratio test (LRT). 
+
+By changing the directory of the folder, you should be able to run the whole R script (from the attached R script « Phylogenetic_ANCOVA_Martinez_et_al_2018.R ») and get exactly the same values as in Table S6. (from the attached pdf « Martinez_et_al_2018_sup_mat.pdf »).
+
+# Reading data
+Data is loaded, reshaped if necessary, and factors are specified.
+```{r}
+PATH = file.path(path.expand("~"), "Data", "ancova")
+data = read.csv(file.path(PATH, "dataPrimaryStudies", "16-Martinez", "testancova.csv"))
+data$DIET = as.factor(data$DIET)
+```
+
+# Notes
+
+* The authors did not perform any ANCOVAs using one more more covariates. Instead they fitted some linear models (with GLS) and compared model fits
+* Therefore, we did not run any ANOCVA or test any assumptions of ANCOVA
+* We could reproduce their regression fit and model comparison results (Table S6)
+* Authors provided R code
+* Raw data was included in the PDF of the supplementary material, but not as data file
+
+Data was analyzed according to recommendations by Field, Miles, & Field (2012).

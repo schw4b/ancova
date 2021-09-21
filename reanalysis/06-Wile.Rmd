@@ -1,0 +1,211 @@
+---
+title: "Reanalysis of 06-Wile"
+author: "Simon Schwab^[University of Zurich, simon.schwab@uzh.ch]"
+date: "01/06/2020"
+output: pdf_document
+toc: true
+---
+
+# Reference
+Wile et al. (2017). Serotonin and dopamine transporter PET changes in the premotor phase of LRRK2 parkinsonism: cross-sectional studies. *Lancet Neurology*, 16(5), 351–359. https://doi.org/10.1016/S1474-4422(17)30056-X
+
+```{r, include=FALSE}
+# install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
+library(biostatUZH)
+library(car)
+library(readxl)
+library(foreign)
+library(readxl)
+library(ggplot2)
+```
+
+# Notes from reading methods section
+* Dependant variable: PET radiotracer called 11C-DASB in cortex (first of many ANCOVAs reported)
+* Independent variable: Group
+  * Healty controls (n=9)
+  * LRRK2 w/o PD    (n=9)
+  * LRRK2 w PD      (n=7)
+  * sporadic PD     (n=13)
+* Covariate: age
+* age was not estimable for LRRK2 without manifest Parkinson's disease
+* Design: 1-way ANCOVA with group (4 levels) as IV and age as covariate
+
+# Reading data
+Data is loaded, reshaped if necessary, and factors are specified.
+```{r}
+PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
+data = read_excel(file.path(PATH, "dataPrimaryStudies", "06-Wile", "06-Wile.xlsx"))
+
+# group variable is dummy coded, key for AncovaVariable file
+# 0 = healthy control, 1 = LRRK2 premanifest, 2 = LRRK2 affected, 3 = sporadic PD
+data$Group.factor = NA
+data$Group.factor[data$Group == 0] = "healthy control"
+data$Group.factor[data$Group == 1] = "LRRK2 premanifest"
+data$Group.factor[data$Group == 2] = "LRRK2 affected"
+data$Group.factor[data$Group == 3] = "sporadic PD"
+data$Group.factor = factor(data$Group.factor,
+                           levels = c("healthy control", "LRRK2 premanifest",
+                                      "LRRK2 affected", "sporadic PD"))
+```
+
+# Descriptives
+## Dependant variable
+Number of samples and mean (SD) in levels of the independent variables. We reproduce Table 3 and Figure 2A of the study.
+```{r}
+idx = c(1, 3, 2, 4) # sorting as in publication
+tab.dv = array(NA, dim=c(4,3))
+tab.dv[,1] = levels(data$Group.factor)
+tab.dv[,2] = summary(data$Group.factor)
+tab.dv[,3] = tapply(data$Cortex, data$Group.factor, 
+                  function (x) sprintf("%0.2f (%0.2f)", mean(x), sd(x)))
+colnames(tab.dv) = c("group", "n", "mean (SD)")
+print(tab.dv)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=Cortex, x=Group.factor, color=Group.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("¹¹C-DASB in cortex") + ggtitle("Dependant variable")
+```
+
+## Covariate(s)
+```{r}
+idx = c(1, 3, 2, 4) # sorting as in publication
+tab.cv = array(NA, dim=c(4,3))
+tab.cv[,1] = levels(data$Group.factor)
+tab.cv[,2] = summary(data$Group.factor)
+tab.cv[,3] = tapply(data$`Age at PET`, data$Group.factor, 
+                  function (x) sprintf("%0.1f (%0.1f)", mean(x), sd(x)))
+colnames(tab.cv) = c("group", "n", "mean (SD)")
+print(tab.cv)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=`Age at PET`, x=Group.factor, color=Group.factor)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  xlab("group") + ylab("Age at PET") + ggtitle("Covarate")
+```
+
+# Main analysis ANCOVA
+```{r, include=FALSE}
+stats.orig.IV = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = NA,
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
+
+stats.orig.CV = stats.orig.IV
+
+# enter all results from primary study here
+stats.orig.IV$pvalue = "n.s." 
+```
+
+
+```{r}
+# Orthogonal contrasts
+contrasts(data$Group.factor) = contr.helmert(4) 
+
+fit.ancova = aov(Cortex ~ `Age at PET` + Group.factor, data = data)
+# result = summary(fit) # Type I
+result = Anova(fit.ancova, type=3) # Type III
+print(result)
+```
+
+```{r, include=FALSE}
+stats.rep.IV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[3]),
+                          df1 = result$Df[3],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[3]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+
+stats.rep.CV = data.frame(Fvalue = sprintf("%.2f",result$`F value`[2]),
+                          df1 = result$Df[2],
+                          df2 = result$Df[4],
+                          pvalue = formatPval(result$`Pr(>F)`[2]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+```
+
+# Comparing ANCOVA in original study with reanalysis
+## Independent variable
+```{r}
+tab.IV = rbind(stats.orig.IV, stats.rep.IV)
+rownames(tab.IV) = c("original Study", "reanalysis")
+print(t(tab.IV))
+```
+
+## Covariate
+```{r}
+tab.CV = rbind(stats.orig.CV, stats.rep.CV)
+rownames(tab.CV) = c("original Study", "reanalysis")
+print(t(tab.CV))
+```
+
+# Assumptions
+## 1.  Homogeneity of variance
+* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
+* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
+* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
+```{r}
+tapply(data$Cortex, data$Group.factor, sd)
+leveneTest(Cortex ~ Group.factor, data = data)
+```
+
+
+## 2.  Independence between covariate and IV
+When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
+
+We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
+```{r}
+fit.cv = aov(`Age at PET` ~ Group.factor, data = data) 
+Anova(fit.cv, type=3)
+```
+
+
+## 3. Homogeneity of regression slopes
+```{r}
+fit.hrs = aov(Cortex ~ `Age at PET`*Group.factor, data = data)
+Anova(fit.hrs, type=3)
+```
+
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=Cortex, x=`Age at PET`, color=Group.factor, shape=Group.factor)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x,method=lm, se=FALSE, fullrange=TRUE) +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  xlab("Age at PET") + ylab("¹¹C-DASB in cortex")
+```
+
+
+# Additional analyses: MANCOVA
+The paper performed four ANCOVAs for cortex, striatum, brainstem, and hypothalamus but did not correct for multiple testing. Therefore, we also perform a MANCOVA.
+```{r}
+fit = manova(cbind(Cortex, Striatum, Brainstem, Hypothalamus) ~ Group.factor + `Age at PET`,
+             data=data)
+summary(fit)
+```
+
+# Notes
+
+* The first reported ANCOVA which was n.s. was reproduced
+* p-value was not reported
+* Authors also report age unadjusted analyses and report these as ANCOVAs instead of ANOVAs (p. 357) which was confusing
+* Assumptions were met, except homogeneity of regression slopes showing a different relationship of outcome and covariate in the LRRK2 premanifest group
+* Many analyses, they corrected for multiplicity
+
+Data was analyzed according to recommendations by Field, Miles, & Field (2012).

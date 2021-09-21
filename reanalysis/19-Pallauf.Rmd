@@ -1,0 +1,212 @@
+---
+title: "19-Pallauf"
+author:
+- Audrey Yeo^[University of Zurich, audrey.yeo@uzh.ch]
+- Simon Schwab^[University of Zurich, simon.schwab@uzh.ch]
+date: "01/06/2020"
+output: pdf_document
+toc: true
+---
+
+# Reference
+Pallauf, K., Chin, D., Günther, I., Birringer, M., Lüersen, K., Schultheiß, G., Vieten, S., Krauß, J., Bracher, F., Danylec, N., Soukup, S. T., Kulling, S. E., & Rimbach, G. (2019). Resveratrol, lunularin and dihydroresveratrol do not act as caloric restriction mimetics when administered intraperitoneally in mice. Scientific Reports, 9(1), 4445. https://doi.org/10.1038/s41598-019-41050-2
+
+```{r, include=FALSE}
+# install.packages("biostatUZH", repos="http://R-Forge.R-project.org")
+library(biostatUZH)
+library(car)
+library(readxl)
+library(foreign)
+library(readxl)
+library(ggplot2)
+library(nlme)
+```
+
+# Notes from reading methods section
+An analysis of covariances (ANCOVA) was conducted for the weight development. For the weekly weight development, the statistical model included the treatment group (CON, RSV, DHR, LUN), the covariate ‘week’ as well as their interaction term as fixed factors. The mouse was regarded as random factor. Researchers excluded the CR mice from the statistical analysis of feed uptake and bodyweight.
+ 
+* Dependant variable: Weight from mice (N = 50)
+* Independent variable: Treatment group
+  * CON (n = 10 mice)
+  * RSV (n = 10)
+  * DHR (n = 10)
+  * LUN (n = 10)
+* Covariate: Time (9 timepoints)
+
+# Notes from Authors sent by Email
+In the csv-file the E in the column weeks stands for experimental (as in contrast to adaptation weeks which are not in the file). The weight is in grams. CON or C are ad-libitum-fed control mice injected with saline, CR is the group of mice on -40% caloric restriction injected with saline, RES or R mice were injected with resveratrol, DHR or D are mice injected with dihydroresveratrol, LUN or L mice were injected with lunularin. If there are no values in the column weight, the mouse died before the end of the trial. We started with 10 mice per group (CR, C, R, D and L 1-10).
+
+# Reading data
+Data is loaded, reshaped if necessary, and factors are specified.
+```{r}
+PATH = file.path(path.expand("~"), "Data", "ancova") # ancova project folder
+data = read.csv(file.path(PATH, "dataPrimaryStudies", "19-Pallauf", "Weight_Resveratrol_sorted_E.csv"))
+data = data[1:450,]# cut-off empty lines
+data = subset(data, subset = Group != "CR")# exlude CR mice according to paper
+
+N = 40
+n = 10 # per group
+
+# convert to factors
+data$Group = as.factor(data$Group)
+data$Mouse = as.factor(data$Mouse)
+data$Week  = as.factor(data$Week)
+
+# label mice with missing data
+data$hasMissing = unlist(tapply(data$Weight, data$Mouse, function (x) rep(any(is.na(x)), 9) ))
+
+summary(data)
+```
+
+# Descriptives
+## Dependant variable
+
+Mean at the end of trial per group. See Suppl. Data X-1.
+```{r}
+tab = subset(data, subset = Week=="E8")
+mean_sd = function(x) { sprintf("%0.1f (%0.1f)", mean(x, na.rm=T), sd(x, na.rm=T)) }
+tapply(tab$Weight, tab$Group, mean_sd)
+```
+
+Number of samples and mean (SD) in levels of the independent variables. Compare to Figure 2a in paper.
+```{r}
+d1 = aggregate(Weight ~ Group*Mouse, data = data, FUN = mean)
+```
+
+Mouse weights per group (averaged across 9 timepoints)
+```{r fig.height=2, fig.width=3.5}
+ggplot(d1, aes(y=Weight, x=Group, color=Group)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  ggtitle("Dependant variable")
+```
+
+Mean weight (95%-CI) across mice per week and group. Compare to Figure 2a.
+```{r fig.height=2, fig.width=3.5}
+d = aggregate(Weight ~ Week*Group, data = data, FUN = mean)
+d$sd = aggregate(Weight ~ Week*Group, data = data, FUN = sd)[,3]
+d$se = d$sd/sqrt(N)
+
+ggplot(d, aes(y=Weight, x=Week, group=Group, color=Group)) +
+  geom_errorbar(aes(ymin=Weight-1.96*se, ymax=Weight+1.96*se), width=.1) +
+  geom_line() + geom_point() +
+  theme_minimal()
+```
+
+## Covariate(s)
+I wonder why "Week" is called covariate and not just a normal explanatory factor. Since it is not continuous.
+```{r fig.height=2, fig.width=3.5}
+ggplot(data, aes(y=Weight, x=Week, color=Week)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.15, height = 0)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank()) +
+  ggtitle("Covarate")
+```
+
+# Main analysis ANCOVA
+```{r, include=FALSE}
+stats.orig.IV = data.frame(
+  Fvalue =  NA,
+  df1 = NA,
+  df2 = NA,
+  pvalue = NA,
+  MD = NA,
+  lowerCI = NA,
+  upperCI = NA)
+```
+
+
+# ANCOVA/ANCOVA cannot handle missing data, excluding 5 mice with 45 values altogether.
+```{r}
+# Orthogonal contrasts
+contrasts(data$Group) = contr.helmert(4)
+
+data.nomiss = subset(data, subset = !hasMissing)
+fit.ancova = aov(Weight ~ Group*Week + Error(Mouse/Week) + Group, data = data.nomiss)
+result.aov = summary(fit.ancova) # Type I
+print(result.aov)
+```
+
+# Using mixed model, excluding 24 values
+```{r}
+mod1 = lme(Weight ~ Week + Group + Group:Week, data=data, na.action = na.exclude, random = ~1|Mouse/Week, method = "ML")
+result.lme = anova(mod1, type="marginal")
+print(result.lme)
+```
+
+We report results from the mixed model
+```{r, include=FALSE}
+stats.rep.IV.group = data.frame(Fvalue = sprintf("%.2f",result.lme$`F-value`[3]),
+                          df1 = result.lme$numDF[3],
+                          df2 = result.lme$denDF[3],
+                          pvalue = formatPval(result.lme$`p-value`[3]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+
+stats.rep.IV.week = data.frame(Fvalue = sprintf("%.2f",result.lme$`F-value`[2]),
+                          df1 = result.lme$numDF[2],
+                          df2 = result.lme$denDF[2],
+                          pvalue = formatPval(result.lme$`p-value`[2]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+
+
+stats.rep.IV.weekXgroup = data.frame(Fvalue = sprintf("%.2f",result.lme$`F-value`[4]),
+                          df1 = result.lme$numDF[4],
+                          df2 = result.lme$denDF[4],
+                          pvalue = formatPval(result.lme$`p-value`[4]),
+                          MD = NA,
+                          lowerCI = NA,
+                          upperCI = NA
+)
+```
+
+# Comparing ANCOVA in original study with reanalysis
+## Independent variable
+```{r}
+tab.IV = rbind(stats.orig.IV, stats.rep.IV.group, stats.rep.IV.week, stats.rep.IV.weekXgroup)
+rownames(tab.IV) = c("original Study", "Group", "Week", "Group x Week")
+print(t(tab.IV))
+```
+
+## Covariate
+Study does not have a continuous covariate.
+
+# Assumptions
+## 1.  Homogeneity of variance
+* ANOVA/ANCOVA is fairly robust in terms of the error rate when sample sizes are equal.
+* When groups with larger sample sizes have larger variances than the groups with smaller sample sizes, the resulting F-ratio tends to be conservative. That is, it's more likely to produce a non-significant result when a genuine difference does exist in the population.
+* Conversely, when the groups with larger sample sizes have smaller variances than the groups with smaller samples sizes, the resulting F-ratio tends to be liberal and can inflate the false positive rate.
+
+Not applicable as no ANCOVA was performed.
+
+## 2.  Independence between covariate and IV
+When the covariate and the experimental effect (independent variable) are not independent the treatment effect is obscured, spurious treatment effects can arise and the interpretation of the ANCOVA is seriously compromised.
+
+We test whether our groups differ on the CV. If the groups do not significantly differ then is appropriate to use the covariate.
+
+Not applicable in this study as there is no continuous covariate.
+
+## 3. Homogeneity of regression slopes
+We test the interaction between the IV and the CV.
+Not applicable in this study as there is no continuous covariate.
+
+# Notes
+
+* In the statistics section the ANCOVA model was not specified.
+* The variable "week" was named as the covariate, but is categorical and not continuous as required in ANCOVA. Therefore, the analysis was not strictly an ANCOVA. The authors tested the factors week x group on mouse weight.
+* Authors provided code that showed their model specification.
+* Authors implemented, what they call "ANCOVA" as a mixed effects model with nlme to test the interaction of Group X Week and accounting for repeated measures.
+* Authors should have called their analysis a linear mixed model and not ANCOVA.
+* Test statistics and p-values are not provided, only one from a a single comparison (LUN vs. CON).
+* Assumptions are not applicable as no ANCOVA was performed.
+* Overall, our results are consistent with what was reported in the paper: an interaction of group x week with a different body weight time course for LUN compared to the other groups.
+
+Data was analyzed according to recommendations by Field, Miles, & Field (2012).
